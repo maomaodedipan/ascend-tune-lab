@@ -11,3 +11,9 @@ A repository for deploying agents/skills for parameter tuning, profiling and ana
 | [serving-cfg-extract](configuration-tuning-skills/serving-cfg-extract/) | Extract non-default args from serving startup logs |
 | [serving-perf-metrics](configuration-tuning-skills/serving-perf-metrics/) | Parse serving performance metrics from logs |
 | [vllm-ascend-config-extractor](configuration-tuning-skills/vllm-ascend-config-extractor/) | Extract vLLM-Ascend config definitions from source |
+
+## Agents
+
+| Agent | Description |
+|-------|-------------|
+| [serving-perf-optimization](configuration-tuning-agents/) | Orchestrate vLLM-Ascend serving perf tuning; run `configuration-tuning-agents/init.sh` to mount workflows |
