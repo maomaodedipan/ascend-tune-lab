@@ -1,1 +1,10 @@
 .DS_Store
+
+# init.sh project install artifacts (Cursor / OpenCode / etc.)
+/.cursor/
+/AGENTS.md
+/workflows
+
+# Local optimization cases (baseline summary, tuning placeholder, progress)
+/optimization/
+/workspace/

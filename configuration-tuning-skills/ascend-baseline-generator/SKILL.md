@@ -22,7 +22,7 @@ description: >-
 
 ### MD 配置文件格式
 
-配置文件为一个 Markdown 文件，包含基本参数列表和服务化配置的 bash 代码块：
+配置文件为一个 Markdown 文件：**必须** 含 `## 基本参数`（7 项字段）；**可选** 含 `## 服务化配置` bash 代码块（用于覆盖模型路径 / host / port）：
 
 ```markdown
 # 部署配置
@@ -60,7 +60,7 @@ vllm serve ... \
 | `input_seq_len` | 输入长度 | 4096 |
 | `output_seq_len` | 输出长度 | 1024 |
 
-参考示例：[config.example.md](config.example.md)
+参考示例：[config.example.md](config.example.md)（`## 服务化配置` 整节可省略。）
 
 ### 基线配置目录结构
 

@@ -2,14 +2,14 @@
 
 `baseline-summary.md` 是 **`serving-baseline-reproduce-subagent` 的结构化输出**，不是整条服务化调优流水线的终态报告。
 
-下一环节的 subagent（部署验证、启动配置提取、运行指标解析、调优候选等，由 primary 按 workflow 派发）应 **以本文件为输入契约** 读取上下文；primary 仅负责验收 handoff 是否完整，并把路径写入 `progress.md`，**不在本文件内维护全流程状态**。
+下一环节 **`serving-tuning-subagent`（Phase 2 · 占位）** 应 **以本文件为输入** 读取上下文；primary 在 Phase 1 验收后派发 Phase 2 占位 subagent。Phase 2 当前不执行调优，仅写 `tuning-status.md`。
 
 ## 落盘布局
 
 ```text
 {case_dir}/baseline/
 ├── baseline-launch.sh       # 可执行启动脚本（与 summary 配套）
-├── baseline-summary.md      # 本模板 — 基线复现 subagent → 下一环节 subagent
+├── baseline-summary.md      # 本模板 — Phase 1 结构化输出
 └── config.used.md           # 匹配用 MD 配置副本
 ```
 
@@ -17,16 +17,14 @@
 
 | 角色 | 关系 |
 | --- | --- |
-| **写者** | `serving-baseline-reproduce-subagent`（Step 1 基线复现） |
-| **读者** | 服务化调优 **下一环节 subagent**（Step 2+）；primary 做 handoff 验收 |
+| **写者** | `serving-baseline-reproduce-subagent`（Phase 1） |
+| **读者** | `serving-tuning-subagent`（Phase 2）；primary 做 Phase 1 验收 |
 | **不读者** | 不应把本文件当作 Plan Dashboard、调优 round 记录或最终性能结论 |
 
 **边界**：
 
-- 常驻区 **§1–§5** 为下游必填输入；缺失则下一环节 subagent 应拒绝开工并向 primary 报错。
-- **§6 附录** 仅为基线复现过程留痕（文档匹配、评分）；下游 **可跳过不读**。
-
-填写示例见 [`baseline-summary-example.md`](baseline-summary-example.md)。
+- 常驻区 **§1–§5** 为下游必填输入；缺失则 Phase 2 subagent 应拒绝开工并向 primary 报错。
+- **§6 附录** 仅为基线复现过程留痕（文档匹配、评分）；Phase 2 **可跳过不读**。
 
 ---
 
@@ -35,11 +33,10 @@
 复制以下骨架到 `{case_dir}/baseline/baseline-summary.md` 并填写。
 
 ```markdown
-# Baseline Reproduce Handoff
+# Baseline Summary
 
-> producer: serving-baseline-reproduce-subagent  
-> consumer: 服务化调优下一环节 subagent（Step 2+）  
-> 用途: 基线复现结果交接，非全流程输出
+> producer: serving-baseline-reproduce-subagent
+> phase: 1
 
 ## 1. 场景标识
 
@@ -101,9 +98,15 @@
 | data_parallel_size | |
 | quantization | |
 
-## 5. 下一环节 subagent 输入（Handoff Checklist）
+### 4.2 用户配置文件覆盖（`## 服务化配置`，可选）
 
-本节为 **下游开工最小集**；subagent 进场先 Read 本节并核对。
+- serving_config_section_present: yes | no
+- overrides_applied: yes | no
+- notes: （无该节或未提供完整三项时：使用 baseline 文档默认值）
+
+## 5. Phase 2 输入清单
+
+Phase 2 subagent 进场先 Read 本节并核对。
 
 - [ ] `match_status` = matched 且 `profile_confirmed` = yes
 - [ ] `launch_script_path` 存在且与 §4 摘要一致
@@ -114,12 +117,12 @@
 | --- | --- |
 | service_host | |
 | service_port | |
-| perf_goal_optional | （可选：吞吐/时延目标，primary Step 0 传入则记录） |
-| suggested_next_actions | deploy_and_serve | collect_startup_log | collect_serving_log | （供 primary 派发参考，可多选） |
+| perf_goal_optional | （可选：吞吐/时延目标） |
+| suggested_next_actions | proceed_to_phase2_placeholder |
 
 ## 6. 附录：基线复现过程（可选）
 
-仅供基线复现 subagent 留痕；**下一环节 subagent 不必读取**。
+仅供 Phase 1 subagent 留痕；**Phase 2 不必读取**。
 
 ### 6.1 五字段比对
 

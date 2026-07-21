@@ -218,10 +218,27 @@ install_repo_path_links() {
   if [ "$LEVEL" != "project" ]; then
     return 0
   fi
-  ln -sfn "$(realpath_safe "$SKILL_ROOT")" "$CONFIG_ROOT_BASE/configuration-tuning-skills"
-  ok "configuration-tuning-skills → $CONFIG_ROOT_BASE/"
-  ln -sfn "$(realpath_safe "$PLUGIN_ROOT")" "$CONFIG_ROOT_BASE/configuration-tuning-agents"
-  ok "configuration-tuning-agents → $CONFIG_ROOT_BASE/"
+  for spec in "$SKILL_ROOT:configuration-tuning-skills" "$PLUGIN_ROOT:configuration-tuning-agents"; do
+    local src="${spec%%:*}"
+    local repo_name="${spec#*:}"
+    local dest="$CONFIG_ROOT_BASE/$repo_name"
+    local src_abs dest_abs
+    src_abs="$(realpath_safe "$src")"
+    if [ -e "$dest" ]; then
+      dest_abs="$(realpath_safe "$dest")"
+      if [ "$src_abs" = "$dest_abs" ]; then
+        info "$repo_name already present in-repo, skip symlink"
+        continue
+      fi
+    fi
+    if [ -d "$dest" ] && [ ! -L "$dest" ]; then
+      warn "$repo_name exists as directory; skip symlink (use in-repo paths)"
+      continue
+    fi
+    rm -f "$dest"
+    ln -sfn "$src_abs" "$dest"
+    ok "$repo_name → $dest"
+  done
 }
 
 write_manifest() {
@@ -297,6 +314,6 @@ echo -e "  ${GREEN}${BOLD}✓ configuration-tuning-agents installed${NC}"
 echo ""
 echo -e "  ${BOLD}Quick start:${NC}"
 echo -e "  ${CYAN}1.${NC} 在目标项目打开 Agent（$TOOL）"
-echo -e "  ${CYAN}2.${NC} 输入：${GREEN}${BOLD}为 Qwen3.5-27B 做 vLLM-Ascend 服务化性能优化，从基线复现开始${NC}"
+echo -e "  ${CYAN}2.${NC} 启动 Agent；若工作目录无 ${DIM}deploy-config.md${NC}，将自动生成模板，填完 ${DIM}## 基本参数${NC} 后重新发起"
 echo -e "  ${CYAN}3.${NC} Primary 将 Read：${DIM}workflows/serving-perf-optimization-workflow.md${NC}"
 echo ""

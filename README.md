@@ -16,4 +16,4 @@ A repository for deploying agents/skills for parameter tuning, profiling and ana
 
 | Agent | Description |
 |-------|-------------|
-| [serving-perf-optimization](configuration-tuning-agents/) | Orchestrate vLLM-Ascend serving perf tuning; run `configuration-tuning-agents/init.sh` to mount workflows |
+| [serving-perf-optimization](configuration-tuning-agents/) | Two-phase vLLM serving pipeline: Phase 1 baseline config (active), Phase 2 tuning (placeholder) |
