@@ -3,7 +3,7 @@
 vLLM-Ascend 服务化性能优化编排，架构对齐 CANNBot **Plugin → Agent → Skill**，目录命名与 [`configuration-tuning-skills/`](../configuration-tuning-skills/) 对称。
 
 - **Primary**：[`AGENTS.md`](AGENTS.md) — `serving-perf-optimization`
-- **Subagents**：[`agents/`](agents/) — 各 step 子角色定义（当前 Step 1：`serving-baseline-reproduce-subagent`）
+- **Subagents**：[`agents/`](agents/) — Phase 1 `serving-baseline-reproduce-subagent`；Phase 2 占位 `serving-tuning-subagent`
 - **工作流**：[`workflows/`](workflows/) — 编排步骤与派发模板
 - **安装**：[`init.sh`](init.sh) — 挂载 skills / agents / **workflows** 到目标项目
 
@@ -35,7 +35,7 @@ vLLM-Ascend 服务化性能优化编排，架构对齐 CANNBot **Plugin → Agen
 
 1. 将 `AGENTS.md` 复制或链接到项目编排入口。
 2. 将 `workflows/` 链接到项目根 `workflows/`，保证 AGENTS 内相对路径可解析。
-3. 准备 MD 配置（参考 `configuration-tuning-skills/ascend-baseline-generator/config.example.md`）。
+3. 准备 MD 配置文件：在工作目录填写 `deploy-config.md`（首次运行 Agent 会自动生成模板），或参考 `configuration-tuning-skills/ascend-baseline-generator/config.example.md`；`## 基本参数` 必填，`## 服务化配置` 可选。
 
 ## 目录结构
 
@@ -44,20 +44,25 @@ configuration-tuning-agents/
 ├── init.sh                      # CANNBot 风格安装脚本
 ├── AGENTS.md                    # primary orchestrator
 ├── README.md
-├── agents/                      # subagent 定义
-│   └── serving-baseline-reproduce-subagent.md
-└── workflows/                   # init.sh 挂载到目标项目的 workflows/
+├── agents/
+│   ├── serving-baseline-reproduce-subagent.md   # Phase 1 · 基线配置生成
+│   └── serving-tuning-subagent.md               # Phase 2 · 服务化调优（占位）
+└── workflows/
     ├── serving-perf-optimization-workflow.md
     ├── templates/
+    │   ├── deploy-config.template.md          # Phase 0 自动生成的工作目录配置模板
     │   ├── baseline-summary-template.md
-    │   └── baseline-summary-example.md
+    │   └── tuning-status-template.md            # Phase 2 占位输出
     └── references/
+        ├── user-config-format.md
         └── subagent-prompt-templates.md
 ```
 
 ## 与 Skills 的对应关系
 
-| Agent 步骤 | Subagent | Skill |
-| --- | --- | --- |
-| Step 1 基线复现 | `serving-baseline-reproduce-subagent` | `ascend-baseline-generator` |
-| Step 3+ | （规划中） | `serving-cfg-extract`, `serving-perf-metrics`, … |
+| Phase | Subagent | Skill | 当前 |
+| --- | --- | --- | --- |
+| 1 基线配置生成 | `serving-baseline-reproduce-subagent` | `ascend-baseline-generator` | 已实现 |
+| 2 服务化调优 | `serving-tuning-subagent` | （无，占位） | 仅占位，不调优 |
+
+Phase 2 实装后可接入：`serving-cfg-extract`、`serving-perf-metrics`、`vllm-ascend-config-extractor` 等。
