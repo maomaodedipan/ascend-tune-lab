@@ -118,7 +118,7 @@ Phase 2 subagent 进场先 Read 本节并核对。
 | service_host | |
 | service_port | |
 | perf_goal_optional | （可选：吞吐/时延目标） |
-| suggested_next_actions | proceed_to_phase2_placeholder |
+| suggested_next_actions | proceed_to_phase2_parallel_tuning |
 
 ## 6. 附录：基线复现过程（可选）
 

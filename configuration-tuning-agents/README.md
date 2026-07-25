@@ -1,9 +1,9 @@
 # Configuration Tuning Agents
 
-vLLM-Ascend 服务化性能优化编排，架构对齐 CANNBot **Plugin → Agent → Skill**，目录命名与 [`configuration-tuning-skills/`](../configuration-tuning-skills/) 对称。
+vLLM-Ascend 服务化性能优化编排，架构 **Plugin → Agent → Skill**，目录命名与 [`configuration-tuning-skills/`](../configuration-tuning-skills/) 对称。
 
 - **Primary**：[`AGENTS.md`](AGENTS.md) — `serving-perf-optimization`
-- **Subagents**：[`agents/`](agents/) — Phase 1 `serving-baseline-reproduce-subagent`；Phase 2 占位 `serving-tuning-subagent`
+- **Subagents**：[`agents/`](agents/) — Phase 1 `serving-baseline-reproduce-subagent`；Phase 2 `serving-tuning-subagent`（并行策略调优）
 - **工作流**：[`workflows/`](workflows/) — 编排步骤与派发模板
 - **安装**：[`init.sh`](init.sh) — 挂载 skills / agents / **workflows** 到目标项目
 
@@ -35,7 +35,7 @@ vLLM-Ascend 服务化性能优化编排，架构对齐 CANNBot **Plugin → Agen
 
 1. 将 `AGENTS.md` 复制或链接到项目编排入口。
 2. 将 `workflows/` 链接到项目根 `workflows/`，保证 AGENTS 内相对路径可解析。
-3. 准备 MD 配置文件：在工作目录填写 `deploy-config.md`（首次运行 Agent 会自动生成模板），或参考 `configuration-tuning-skills/ascend-baseline-generator/config.example.md`；`## 基本参数` 必填，`## 服务化配置` 可选。
+3. 准备 MD 配置文件：未指定工作目录时 Agent 会在当前路径创建 `workspace/`；在 `{workdir}/deploy-config.md` 填写（首次运行会自动生成模板），或参考 `configuration-tuning-skills/ascend-baseline-generator/config.example.md`；`## 基本参数` 必填，`## 服务化配置` / `## SLO约束` 可选。
 
 ## 目录结构
 
@@ -46,13 +46,13 @@ configuration-tuning-agents/
 ├── README.md
 ├── agents/
 │   ├── serving-baseline-reproduce-subagent.md   # Phase 1 · 基线配置生成
-│   └── serving-tuning-subagent.md               # Phase 2 · 服务化调优（占位）
+│   └── serving-tuning-subagent.md               # Phase 2 · 并行策略调优
 └── workflows/
     ├── serving-perf-optimization-workflow.md
     ├── templates/
-    │   ├── deploy-config.template.md          # Phase 0 自动生成的工作目录配置模板
+    │   ├── deploy-config.template.md
     │   ├── baseline-summary-template.md
-    │   └── tuning-status-template.md            # Phase 2 占位输出
+    │   └── tuning-process-template.md   # Phase 2 唯一模板（中间过程+状态）
     └── references/
         ├── user-config-format.md
         └── subagent-prompt-templates.md
@@ -63,6 +63,9 @@ configuration-tuning-agents/
 | Phase | Subagent | Skill | 当前 |
 | --- | --- | --- | --- |
 | 1 基线配置生成 | `serving-baseline-reproduce-subagent` | `ascend-baseline-generator` | 已实现 |
-| 2 服务化调优 | `serving-tuning-subagent` | （无，占位） | 仅占位，不调优 |
+| 2 并行策略调优 | `serving-tuning-subagent` | `serving-parallel-strategy-tuning`（入口） | 已实现（离线） |
+| 2 子步骤 | （由入口编排） | `find-possible-parallel-strategy` | 已实现 |
+| 2 子步骤 | （由入口编排） | `serving-kv-cache-capacity` | 已实现 |
+| 2 子步骤 | （由入口编排） | `serving-slo-concurrency` | 已实现 |
 
-Phase 2 实装后可接入：`serving-cfg-extract`、`serving-perf-metrics`、`vllm-ascend-config-extractor` 等。
+Phase 2 为离线估算；线上部署/压测相关 skill（`serving-cfg-extract`、`serving-perf-metrics` 等）仍可后续接入。
