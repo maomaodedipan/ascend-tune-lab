@@ -32,12 +32,19 @@
 
 ### 3. 选择配置
 
-工具会匹配到最合适的文档，展示**低时延**和**高吞吐**两个配置供你选择：
+**本地 `baseline-docs/` 命中时**：展示**低时延**和**高吞吐**两个配置供你选择：
 
 - **低时延** — 适合在线推理、对话等延迟敏感场景
 - **高吞吐** — 适合离线批量处理等高并发场景
 
-选择后输出完整的 vllm 启动命令，可直接复制使用。
+**本地未命中时**（含本地暂不支持的 `PD分离` / `双机混部` 等）：自动从 [vLLM-Ascend 模型教程](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/) 拉取对应模型页配置（例如 [GLM5](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/GLM5.html)），**固定使用高吞吐**，不再询问 profile。也可手动跑：
+
+```bash
+python3 configuration-tuning-skills/ascend-baseline-generator/scripts/fetch_docs_baseline.py \
+  --config your-config.md --json
+```
+
+选择/拉取后输出完整的 vllm 启动命令，可直接复制使用。
 
 ## 设备类型对照
 
@@ -50,9 +57,11 @@
 
 ```
 ascend-baseline-generator/
-├── SKILL.md               # Agent skill 定义
-├── config.example.md      # 配置文件示例
-├── baseline-docs/         # 官方部署文档库（无需修改）
+├── SKILL.md
+├── config.example.md
+├── scripts/fetch_docs_baseline.py
+├── references/docs_model_page_aliases.json
+├── baseline-docs/          # 本地优先
 │   ├── Qwen/
 │   ├── DeepSeek/
 │   ├── GLM/

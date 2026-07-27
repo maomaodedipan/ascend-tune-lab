@@ -1,0 +1,21 @@
+{
+  "description": "Map user ## 基本参数 model_name to vLLM-Ascend docs page stem under tutorials/models/",
+  "docs_index": "https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/",
+  "aliases": {
+    "GLM5": "GLM5",
+    "GLM-5": "GLM5",
+    "GLM-5.1": "GLM5",
+    "GLM5.1": "GLM5",
+    "GLM-5.2": "GLM5.2",
+    "Qwen3.5-27B": "Qwen3.5-27B-Qwen3.6-27B",
+    "Qwen3.6-27B": "Qwen3.5-27B-Qwen3.6-27B",
+    "Qwen3.5-397B": "Qwen3.5-397B-A17B",
+    "Qwen3.5-397B-A17B": "Qwen3.5-397B-A17B",
+    "MiniMax-M2": "MiniMax-M2",
+    "MiniMax-M2.5": "MiniMax-M2",
+    "DeepSeek-V3.2": "DeepSeek-V3.2",
+    "DeepSeek-V3.1": "DeepSeek-V3.1",
+    "Kimi-K2.5": "Kimi-K2.5",
+    "Kimi-K2.6": "Kimi-K2.6"
+  }
+}
