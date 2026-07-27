@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 .tmp/
 
+# ascend-baseline-generator remote docs HTML cache
+configuration-tuning-skills/ascend-baseline-generator/.cache/
+
 # init.sh project install artifacts (Cursor / OpenCode / etc.)
 /.cursor/
 /AGENTS.md

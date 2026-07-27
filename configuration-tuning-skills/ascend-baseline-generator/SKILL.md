@@ -2,16 +2,30 @@
 name: ascend-baseline-generator
 description: >-
   Finds the best vLLM-Ascend deployment config (low-latency or high-throughput)
-  from baseline markdown docs by matching device, model, quantization, NPU count,
-  and deploy strategy, then adjusts context length by input/output sequence length.
-  Use when the user asks to find or generate vLLM baseline configs, reproduce
-  Ascend deployment baselines, or provides an MD config file with 基本参数.
+  from local baseline markdown docs by matching device, model, quantization, NPU
+  count, and deploy strategy; if no local match, fetches high-throughput configs
+  from the official vLLM-Ascend model tutorials. Adjusts context length by
+  input/output sequence length. Use when the user asks to find or generate vLLM
+  baseline configs, reproduce Ascend deployment baselines, or provides an MD
+  config file with 基本参数.
 ---
 
 # ascend-baseline-generator — vLLM-Ascend 基线配置生成
 
 根据 MD 配置文件中的设备/模型标识字段（device_type、model_name、quantization、num_npus、deploy_strategy），
-从本 skill 目录下的 `baseline-docs/` 部署文档中查找匹配项。只有所有 5 个标识字段都匹配时，才根据输入输出长度自动匹配最佳配置行并替换上下文长度。
+优先从本 skill 目录下的 `baseline-docs/` 部署文档中查找匹配项。只有所有 5 个标识字段都匹配时，才根据输入输出长度自动匹配最佳配置行并替换上下文长度。
+
+**进入 Step 4R 的条件（硬要求，满足任一即回退，不得直接失败结束）**：
+
+1. `baseline-docs/` 中没有任何文档的 5 个标识字段全部匹配；或
+2. 本地虽有标识匹配，但 `deploy_strategy` 为当前本地流程**暂不支持**的类型（如 `PD分离`、`双机混部`，以及未知策略）——本地无对应解析分支时，改从官方教程站拉高吞吐配置。
+
+远程回退说明：
+
+- 索引页：<https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/>
+- 示例（GLM-5 / GLM-5.1）：<https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/GLM5.html>
+- 脚本：`scripts/fetch_docs_baseline.py`（解析页面中的 `vllm serve` 块，按设备/量化/卡数/部署策略打分，**只选高吞吐**；`PD分离` 优先匹配教程中的 PD/1P1D 章节）
+- 别名表：`references/docs_model_page_aliases.json`（`model_name` → 教程页 stem）
 
 ## 参数
 
@@ -64,23 +78,21 @@ vllm serve ... \
 
 ### 基线配置目录结构
 
-部署文档位于 `baseline-docs/` 目录下（相对于本 skill 目录），按模型厂家/版本分层组织：
-
 ```
-baseline-docs/
-├── DeepSeek/DeepSeek-V3.2/
-│   └── 基于vLLM-Ascend的DeepSeek-V3.2模型Atlas 800I A3单机混部部署实践.md
-├── GLM/GLM-5.1/
-│   └── 基于vLLM-Ascend的GLM-5.1模型Atlas 800I A3单机混部部署实践.md
-├── MiniMax/MiniMax-M2.5/
-│   └── 基于vLLM-Ascend的MiniMax-M2.5模型Atlas 800I A3单机混部部署实践.md
-└── Qwen/
-    ├── Qwen3.5-122B/（含 A2、A3 两份文档）
-    ├── Qwen3.5-27B/（含 A2、A3 两份文档）
-    └── Qwen3.5-397B/（含 A2、A3 两份文档）
+ascend-baseline-generator/
+├── SKILL.md
+├── config.example.md
+├── scripts/fetch_docs_baseline.py      # 本地无匹配 → 官方教程站高吞吐回退
+├── references/docs_model_page_aliases.json
+└── baseline-docs/                      # 本地优先匹配
+    ├── DeepSeek/DeepSeek-V3.2/
+    ├── GLM/GLM-5.1/
+    ├── MiniMax/MiniMax-M2.5/
+    └── Qwen/Qwen3.5-{27B,122B,397B}/
 ```
 
-文件名命名规范：`基于vLLM-Ascend的{模型名}模型Atlas {设备名}单机混部部署实践.md`
+本地文件名规范：`基于vLLM-Ascend的{模型名}模型Atlas {设备名}单机混部部署实践.md`  
+远程教程页示例：`GLM5.html`、`Qwen3.5-27B-Qwen3.6-27B.html`（见 [模型教程索引](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/) 与别名表）。
 
 ## 工作流程
 
@@ -173,6 +185,45 @@ baseline-docs/
 - 跳过该 MD 文档文件，不参与后续匹配
 - 继续处理下一个 MD 文档文件
 
+**如果所有本地文档均未 5 字段全匹配：**
+- 输出：「⚠️ 本地 baseline-docs/ 无匹配，进入官方文档站高吞吐回退（Step 4R）」
+- **进入 Step 4R**（不得在此处结束并仅报「未找到配置文档」）
+
+### Step 4R: 官方模型教程站回退（仅高吞吐）
+
+在以下任一情形执行（远程拉取的配置 **一律视为高吞吐**，不再做低时延/高吞吐双 profile 询问）：
+
+- 本地 `baseline-docs/` **无** 5 字段全匹配文档；或
+- 本地有匹配，但 `deploy_strategy` 属于本地暂不支持分支（`PD分离` / `双机混部` / 未知策略）——见 Step 4A
+
+1. 运行脚本（相对本 skill 目录或仓库根均可）：
+   ```bash
+   python3 configuration-tuning-skills/ascend-baseline-generator/scripts/fetch_docs_baseline.py \
+     --config <md配置文件路径> \
+     --json
+   ```
+   可选：`--out <path>.json`、`--bash-out <path>.sh` 落盘；HTML 缓存于 `.cache/docs/`。
+2. 脚本行为：
+   - 拉取索引页 <https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/>，解析模型教程链接
+   - 用 `model_name` + `references/docs_model_page_aliases.json` 解析目标页（如 `GLM-5` / `GLM-5.1` → `GLM5.html`）
+   - 下载对应 HTML，提取所有含 `vllm serve` 的代码块及章节上下文
+   - **只保留高吞吐候选**：优先带「高吞吐 / 高吞吐量 / High Throughput」标签的块；排除明确「低时延 / 低延迟」块；单机混部优先「5.x 在线服务部署 → 单节点」且倾向 `--enable-expert-parallel` / 更大 `--max-num-seqs`
+   - 按 `device_type` / `quantization` / `num_npus`（A3 按卡数×2 die 估 world size）/ `deploy_strategy` 打分选最优
+   - `PD分离`：优先 PD/1P1D 章节与「高吞吐」标签；主脚本写入 `bash`，同场景其他节点脚本放入 `related_bash_blocks`（若有）
+   - `双机混部`：优先多节点非 PD 章节
+   - 若 `--max-model-len` &lt; `input_seq_len + output_seq_len`，替换为二者之和
+3. **成功（`ok: true`）**：
+   - `selected_profile` = `高吞吐`，`profile_confirmed` = `yes`（远程回退无需用户再选 profile）
+   - `matched_baseline_doc` / 来源记为脚本返回的 `source_url`（如 `.../GLM5.html`）
+   - `match_status` = `matched_remote_docs`
+   - 将 `bash` 作为配置块；若存在 `related_bash_blocks`（PD 多节点），一并写入 `baseline-summary.md` / 附加 launch 片段说明
+   - **跳过 Step 5–7**（无本地典型用例表），进入 Step 8（若脚本已改 max-model-len 则核对即可）→ Step 9 → Step 10
+   - 在 summary 中记录：`ref_max_concurrency` ← `--max-num-seqs`（若页面无并发表）；`fallback_reason`（如 `unsupported_deploy_strategy:PD分离`）
+4. **失败（`ok: false`）**：
+   - 向用户展示脚本 `warning`（含尝试过的页面、索引 URL）
+   - 提示可：① 补全/修正 `## 基本参数`；② 在 `references/docs_model_page_aliases.json` 增加别名；③ 手动把教程页配置写入 `baseline-docs/` 后重试
+   - **停止**，不得编造启动参数
+
 ### Step 4A: 根据部署策略分支
 
 根据配置 MD 文件中的 `deploy_strategy` 判断走哪个流程：
@@ -182,16 +233,16 @@ baseline-docs/
   - 进入 Step 5，继续匹配输入输出长度
 
 - **如果 deploy_strategy = "双机混部"**：
-  - 输出：「⏳ 双机混部配置匹配流程待补充，暂不支持」
-  - 跳过该 MD 文档文件，继续处理下一个
+  - 输出：「⚠️ 本地暂无双机混部解析流程，改走官方文档站高吞吐回退（Step 4R）」
+  - **进入 Step 4R**（按 `deploy_strategy=双机混部` 优先匹配多节点/非 PD 教程配置）；**不要**跳过并结束
 
 - **如果 deploy_strategy = "PD分离"**：
-  - 输出：「⏳ PD分离配置匹配流程待补充，暂不支持」
-  - 跳过该 MD 文档文件，继续处理下一个
+  - 输出：「⚠️ 本地暂无 PD 分离解析流程，改走官方文档站高吞吐回退（Step 4R）」
+  - **进入 Step 4R**（按 `deploy_strategy=PD分离` 优先匹配教程中的 PD / 1P1D / Prefill·Decode 章节，并优先「高吞吐」推荐）；**不要**跳过并结束
 
 - **其他 deploy_strategy**：
-  - 输出：「⚠️ 未知部署策略：[deploy_strategy]，暂不支持」
-  - 跳过该 MD 文档文件，继续处理下一个
+  - 输出：「⚠️ 未知部署策略：[deploy_strategy]，本地暂不支持解析，改走官方文档站高吞吐回退（Step 4R）」
+  - **进入 Step 4R**；若远程仍失败再向用户说明
 
 ### Step 5: 解析配置节
 
@@ -299,20 +350,23 @@ baseline-docs/
 
 ## 边界处理
 
-- **所有标识字段不匹配**: 如果没有任何 MD 文档的 5 个标识字段能匹配上，提示用户「baseline-docs/ 目录下未找到与设备/模型信息匹配的配置文档，请检查配置 MD 文件中的 device_type、model_name、quantization、num_npus、deploy_strategy」
-- **无匹配表格行**: 如果标识字段匹配但表格中没有能容纳输入/输出长度的行，提示用户「未找到能容纳输入=X 输出=Y 的配置行，请减小输入/输出长度」
+- **本地暂不支持的部署策略**（`PD分离` / `双机混部` / 未知）：**不得**以「暂不支持」结束；必须进入 Step 4R 从文档站拉高吞吐配置
+- **所有本地标识字段不匹配**: **先执行 Step 4R**（官方教程站高吞吐回退）。仅当 Step 4R 也失败时，再提示用户检查 `device_type` / `model_name` / `quantization` / `num_npus` / `deploy_strategy`，或补充别名 / 本地文档
+- **远程文档站不可达**: 展示 `fetch_docs_baseline.py` 的 `warning`；若 `.cache/docs/` 有缓存可复用，否则要求网络恢复或手供配置
+- **远程页无 vllm serve 块 / 无法解析模型页**: 提示核对模型名与 [模型教程索引](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/)，并更新 `docs_model_page_aliases.json`
+- **无匹配表格行**: 如果**本地**标识字段匹配但表格中没有能容纳输入/输出长度的行，提示用户「未找到能容纳输入=X 输出=Y 的配置行，请减小输入/输出长度」（此情形不自动改走 Step 4R，除非用户明确要求以文档站配置覆盖）
 - **未提供参数**: 提示 "用法: ascend-baseline-generator <md配置文件路径>"
 - **MD 配置文件不存在**: 提示 "配置文件 [路径] 不存在，请检查路径"
 - **配置格式错误**: 提示 "配置文件格式错误，请确保包含「基本参数」列表（输入长度、输出长度、设备类型、模型名称、量化格式、NPU卡数、部署策略）"
 - **无可解析表格**: 提示 "未找到包含标准配置表格的章节"
-- **无 MD 文档文件**: 提示 "baseline-docs/ 目录下未找到 .md 文档文件"
+- **无 MD 文档文件**: 若 `baseline-docs/` 为空，仍进入 Step 4R；两者皆失败再报错
 
 ## 示例
 
 **用户输入:**
 `使用 ascend-baseline-generator 处理 config.example.md`
 
-**执行过程:**
+**执行过程（本地命中）:**
 1. 读取 `config.example.md`，从基本参数列表解析到：device_type="A3", model_name="Qwen3.5-27B", quantization="w8a8", num_npus=2, deploy_strategy="单机混部", input_seq_len=4096, output_seq_len=1024
 2. 搜索 `baseline-docs/**/*.md`，读取所有部署文档
 3. 根据文件路径 `baseline-docs/Qwen/Qwen3.5-27B/xxx.md` 得到 model_name="Qwen3.5-27B"；从文件名提取 device_type="Atlas 800I A3"、deploy_strategy="单机混部"
@@ -323,3 +377,10 @@ baseline-docs/
 8. 替换上下文长度
 9. 检测到 config 中有自定义配置，替换模型路径、IP、端口
 10. 输出最终配置
+
+**执行过程（本地未命中 → 文档站回退）:**
+1. 本地 `baseline-docs/` 无 5 字段全匹配（例如模型名为 `GLM-5` 且卡数/量化与本地文档不一致）
+2. 运行 `scripts/fetch_docs_baseline.py --config <md> --json`
+3. 解析索引并打开 [GLM5.html](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/GLM5.html)
+4. 在「在线服务部署 → 单节点」中选出 A3 + w8a8 高吞吐 `vllm serve` 块
+5. `profile=高吞吐`，`profile_confirmed=yes`，进入 Step 9–10 输出最终配置

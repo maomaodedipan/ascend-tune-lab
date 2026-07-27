@@ -54,7 +54,7 @@
 | output_seq_len | |
 
 - matched_baseline_doc: （仓库相对路径）
-- match_status: matched | unmatched
+- match_status: matched | matched_remote_docs | unmatched
 
 ## 2. 已确认基线方案
 
@@ -108,7 +108,7 @@
 
 Phase 2 subagent 进场先 Read 本节并核对。
 
-- [ ] `match_status` = matched 且 `profile_confirmed` = yes
+- [ ] `match_status` = `matched` 或 `matched_remote_docs`，且 `profile_confirmed` = yes
 - [ ] `launch_script_path` 存在且与 §4 摘要一致
 - [ ] §3 参考容量字段已填（尤其 `context_len_max_model_len`、`ref_max_concurrency`）
 - [ ] 服务访问：`service_host`、`service_port` 已填（或明确标注「部署后回填」）
