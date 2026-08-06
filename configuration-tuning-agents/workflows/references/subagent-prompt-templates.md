@@ -2,7 +2,62 @@
 
 Primary agent 使用 Task 工具派发时，将 `{占位符}` 替换为实际值。`subagent_type` 必须与 `agents/*.md` frontmatter 中的 `name` 一致。
 
-**前置条件**：Phase 0 已确定 `workdir` 并校验 `config_md_path`（见 `references/user-config-format.md`）。
+**服务化路径前置条件**：Phase 0 已确定 `workdir` 并校验 `config_md_path`（见 `references/user-config-format.md`）。
+
+**Profiling 路径**：不要求 deploy-config；见下方「Profiling 分析（按需）」。
+
+---
+
+## Profiling 分析（按需，非 Phase 门禁）
+
+用户提供明确 profiling 数据路径，或明确要求对 Ascend profiler / msprof 数据做性能分析时派发（对齐 msagent Profiler）。**跳过** Phase 0–2。
+
+```
+Task 调用参数：
+{
+  "description": "Profiling 性能分析",
+  "subagent_type": "serving-profiling-analysis-subagent",
+  "prompt": "
+scene: profiling-analysis
+
+执行 Ascend NPU Profiling 分析（按需，非服务化 Phase）。
+
+【强制】
+- Read 角色定义：agents/serving-profiling-analysis-subagent.md
+- Read 约定：workflows/references/profiling-analysis.md
+- Read 工具表：workflows/references/msprof-mcp-tools.md
+
+【步骤 0 · 首次安装硬门禁】
+- GetMcpTools 检查 msprof-mcp / user-msprof-mcp 是否 ready
+- 若未安装/未连接：
+  1. Read configuration-tuning-skills/msprof-mcp-setup/SKILL.md
+  2. 按技能安装（Linux/WSL：scripts/bootstrap-msprof-mcp.sh；Windows：pip）
+  3. 提示用户 Reload Window / 重启 IDE
+  4. **停止分析主流程**，回报 setup 状态；不得假装已完成 profiling
+- 仅当 MCP ready 后继续下列步骤
+
+【MCP ready 后】
+- 按场景 Read skill：configuration-tuning-skills/<skill>/SKILL.md
+  （data-validation / db-explorer / computation / communication / schedule /
+   msprof-analyze-cli / cluster-fast-slow-rank / op-mfu / github-raw-fetch）
+- 优先 CallMcpTool；server 名以 GetMcpTools 为准
+- 单次工具失败才可局部退化为文件读取，并说明原因
+
+【输入】
+- profiler_path: {profiler_path}（用户明确路径；禁止自行递归搜索）
+- workdir: {workdir}（默认 ./workspace）
+- output_dir: {output_dir}（默认 {workdir}/profiling）
+- focus: {focus}（可选：计算/通信/调度/集群/全面）
+
+【交付物】
+- MCP 未就绪时：setup 结果说明（binary/配置路径、待 Reload）
+- MCP ready 后：{output_dir}/profiling-report.md
+
+【完成回报】
+向 primary 返回：setup 状态；若已分析则附结论摘要、profiling-report.md 路径、关键证据/MCP 工具说明。
+  "
+}
+```
 
 ---
 

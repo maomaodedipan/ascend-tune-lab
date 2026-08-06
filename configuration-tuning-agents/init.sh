@@ -28,7 +28,7 @@ BRAND="ascend-tune-lab"
 TEAM="configuration-tuning-agents"
 VERSION="0.1.0"
 
-INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency"
+INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency msprof-mcp-setup ascend-profiler-db-explorer ascend-profiler-data-validation ascend-computation-analysis ascend-communication-analysis ascend-schedule-analysis ascend-msprof-analyze-cli ascend-cluster-fast-slow-rank-detector op-mfu-calculator github-raw-fetch"
 INCLUDED_AGENT_PATTERN="serving-*"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
