@@ -4,13 +4,14 @@ Primary agent 使用 Task 工具派发时，将 `{占位符}` 替换为实际值
 
 **服务化路径前置条件**：Phase 0 已确定 `workdir` 并校验 `config_md_path`（见 `references/user-config-format.md`）。
 
-**Profiling 路径**：不要求 deploy-config；见下方「Profiling 分析（按需）」。
+**Profiling 独立路径**：与 Phase 0–2 **互斥**；不要求 deploy-config；见下方「Profiling 分析（独立流水线）」。服务化模板中 **禁止**派发 profiling subagent。
 
 ---
 
-## Profiling 分析（按需，非 Phase 门禁）
+## Profiling 分析（独立流水线 · 非服务化 Phase）
 
-用户提供明确 profiling 数据路径，或明确要求对 Ascend profiler / msprof 数据做性能分析时派发（对齐 msagent Profiler）。**跳过** Phase 0–2。
+**仅当同时满足**：① 用户明确要做 profiling 分析；② 已给出本地 `profiler_path`。  
+**禁止**在服务化 Phase 0/1/2 中途触发；**禁止** Read `serving-perf-optimization-workflow.md`。
 
 ```
 Task 调用参数：
@@ -20,12 +21,13 @@ Task 调用参数：
   "prompt": "
 scene: profiling-analysis
 
-执行 Ascend NPU Profiling 分析（按需，非服务化 Phase）。
+执行 Ascend NPU Profiling 分析（独立流水线；不进入服务化 Phase 0–2）。
 
 【强制】
 - Read 角色定义：agents/serving-profiling-analysis-subagent.md
 - Read 约定：workflows/references/profiling-analysis.md
 - Read 工具表：workflows/references/msprof-mcp-tools.md
+- 禁止执行服务化 Phase 0–2 / deploy-config / baseline / tuning
 
 【步骤 0 · 首次安装硬门禁】
 - GetMcpTools 检查 msprof-mcp / user-msprof-mcp 是否 ready
@@ -44,7 +46,7 @@ scene: profiling-analysis
 - 单次工具失败才可局部退化为文件读取，并说明原因
 
 【输入】
-- profiler_path: {profiler_path}（用户明确路径；禁止自行递归搜索）
+- profiler_path: {profiler_path}（用户明确本地路径；禁止自行递归搜索）
 - workdir: {workdir}（默认 ./workspace）
 - output_dir: {output_dir}（默认 {workdir}/profiling）
 - focus: {focus}（可选：计算/通信/调度/集群/全面）
@@ -63,7 +65,7 @@ scene: profiling-analysis
 
 ## Phase 0 — 工作目录 + 配置文件（Primary，非 subagent）
 
-Primary 自行完成，不派发 subagent：
+Primary 自行完成，不派发 subagent（**本段仅服务化**）：
 
 1. 确定 `workdir`：用户指定 → 否则 `mkdir -p ./workspace` 并使用该目录；告知用户。
 2. 确定 `config_md_path`：用户指定 → 否则 `{workdir}/deploy-config.md`。

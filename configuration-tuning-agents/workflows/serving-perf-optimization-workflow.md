@@ -1,8 +1,10 @@
 # vLLM-Ascend 服务化性能优化 · 工作流
 
-本工作流由 `serving-perf-optimization` primary agent 强制 Read 并严格推进。
+本工作流由 `serving-perf-optimization` primary agent 在 **服务化调优** 场景下强制 Read 并严格推进。
 
 **当前版本范围**：Phase 0 配置门禁 → Phase 1 基线配置生成 → Phase 2 **离线并行策略调优**（入口 skill `serving-parallel-strategy-tuning` + 三子 skill）。
+
+> **范围外**：`serving-profiling-analysis-subagent` 属于 **独立 Profiling 流水线**，**不在本工作流内**。服务化 Phase 0→1→2 **禁止**派发 Profiling；仅当用户明确要做 profiling 分析且给出本地数据路径时，primary 走 `references/profiling-analysis.md`，且 **不得**执行本文档。
 
 > 用户输入：先定 `workdir`（未指定则 `./workspace`），再在其中放 MD 配置（默认 `deploy-config.md`）。`## 基本参数` 必填，`## 服务化配置` / `## SLO约束` 可选。格式见 [`references/user-config-format.md`](references/user-config-format.md)。
 
@@ -63,12 +65,14 @@ Primary / Subagent 向用户回报时须给出 **`workdir` 内**的相对或绝�
 +--------------------------------------------------------------+
 ```
 
-## Subagent 映射
+## Subagent 映射（仅本服务化工作流）
 
 | Phase | Subagent | 状态 |
 | --- | --- | --- |
 | 1 | `serving-baseline-reproduce-subagent` | **已实现** |
 | 2 | `serving-tuning-subagent` | **已实现（离线）** |
+
+本表 **不含** Profiling。`serving-profiling-analysis-subagent` 见独立约定 [`references/profiling-analysis.md`](references/profiling-analysis.md)。
 
 派发模板见 [`references/subagent-prompt-templates.md`](references/subagent-prompt-templates.md)。
 
@@ -78,6 +82,7 @@ Primary / Subagent 向用户回报时须给出 **`workdir` 内**的相对或绝�
 
 ### 全局约束
 
+- **与 Profiling 互斥**：进入本工作流后 **禁止**派发 `serving-profiling-analysis-subagent`；Profiling 不插入任何 Phase。
 - **workdir 默认**：未指定则创建并使用 `{cwd}/workspace`。
 - **配置文件硬门禁**：`workdir` 无合法配置文件，或 `## 基本参数` 未填完 → **不得进入 Phase 1**。
 - **模型 config 硬门禁**：Phase 0 必须拿到 `{workdir}/model_config.json`（优先 ModelScope 下载；失败则警告并要求用户手供）→ 缺失则 **不得进入 Phase 1**。

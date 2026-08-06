@@ -1,6 +1,13 @@
-# Profiling 分析约定
+# Profiling 分析约定（独立流水线）
 
-按需能力（对齐 msagent Profiler）：不经过服务化 Phase 0–2 门禁。由 primary 在用户提供明确数据路径时派发 `serving-profiling-analysis-subagent`。
+与服务化 Phase 0–2 **完全独立**（对齐 msagent Profiler）。**不**嵌入 `serving-perf-optimization-workflow`，也**不**在 baseline / tuning 过程中触发。
+
+由 primary 在 **同时满足** 下列条件时派发 `serving-profiling-analysis-subagent`：
+
+1. 用户明确要做 profiling / profiler / msprof 数据分析；
+2. 用户提供了本地 `profiler_path`（`*_ascend_pt` / `*_ascend_ms` / `PROF_*` 或其可唯一定位的父目录）。
+
+缺路径 → 只索取路径并停止；缺分析意图 → 不派发。服务化进行中 **禁止**顺带派发。
 
 ## 首次安装硬门禁（必须）
 
@@ -25,9 +32,10 @@
 
 ## 输入
 
-- **必填**：`profiler_path` — `*_ascend_pt` / `*_ascend_ms` / `PROF_*` 目录，或其父目录（须能唯一定位数据）。
+- **必填**：`profiler_path` — 用户给出的本地路径。
 - **workdir**：默认 `./workspace`；报告写在 workdir 下。
 - **禁止**：用户未给路径时用 ls/glob/递归搜索猜测位置。
+- **禁止**：执行服务化 Phase 0–2 / 读写 `deploy-config.md` 作为本流水线门禁。
 
 ## 输出
 
