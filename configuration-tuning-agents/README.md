@@ -2,9 +2,9 @@
 
 vLLM-Ascend 服务化性能优化编排，架构 **Plugin → Agent → Skill**，目录命名与 [`configuration-tuning-skills/`](../configuration-tuning-skills/) 对称。
 
-- **Primary**：[`AGENTS.md`](AGENTS.md) — `serving-perf-optimization`
-- **Subagents**：[`agents/`](agents/) — Phase 1 `serving-baseline-reproduce-subagent`；Phase 2 `serving-tuning-subagent`（并行策略调优）
-- **工作流**：[`workflows/`](workflows/) — 编排步骤与派发模板
+- **Primary**：[`AGENTS.md`](AGENTS.md) — `serving-perf-optimization`（双流水线路由）
+- **Subagents**：[`agents/`](agents/) — 服务化 Phase 1 / Phase 2，以及 **独立** Profiling（对齐 msagent Profiler）
+- **工作流**：[`workflows/`](workflows/) — 顶层 `primary-workflow.md` + 平级路径（服务化调优 / Profiling 分析）
 - **安装**：[`init.sh`](init.sh) — 挂载 skills / agents / **workflows** 到目标项目
 
 ## 安装（推荐）
@@ -27,7 +27,9 @@ vLLM-Ascend 服务化性能优化编排，架构 **Plugin → Agent → Skill**�
 | **Workflows** | `.cursor/workflows/` **与** `./workflows/`（符号链接到本插件 `workflows/`） |
 | 仓库路径 | `./configuration-tuning-skills/`、`./configuration-tuning-agents/` |
 
-安装后 primary 读取的工作流入口为：**`workflows/serving-perf-optimization-workflow.md`**。
+安装后 primary 读取的工作流入口为：**`workflows/primary-workflow.md`**（再进入平级路径详文）。
+
+Profiling MCP 接入见 skill：`configuration-tuning-skills/msprof-mcp-setup/`（独立 bootstrap，不绑在 init 默认路径）。
 
 支持 `level`：`project`（默认）、`global`；支持 `tool`：`opencode`、`claude`、`trae`、`cursor`、`copilot`、`codearts`。详见 `./init.sh --help`。
 
@@ -35,37 +37,44 @@ vLLM-Ascend 服务化性能优化编排，架构 **Plugin → Agent → Skill**�
 
 1. 将 `AGENTS.md` 复制或链接到项目编排入口。
 2. 将 `workflows/` 链接到项目根 `workflows/`，保证 AGENTS 内相对路径可解析。
-3. 准备 MD 配置文件：未指定工作目录时 Agent 会在当前路径创建 `workspace/`；在 `{workdir}/deploy-config.md` 填写（首次运行会自动生成模板），或参考 `configuration-tuning-skills/ascend-baseline-generator/config.example.md`；`## 基本参数` 必填，`## 服务化配置` / `## SLO约束` 可选。
+3. **服务化**：准备 MD 配置（默认 `{workdir}/deploy-config.md`），走 Phase 0→1→2。  
+   **Profiling（独立）**：明确要做分析 **且** 提供本地 `*_ascend_pt` / `PROF_*` 路径；**不会**在服务化调优路径内自动触发。
 
 ## 目录结构
 
 ```
 configuration-tuning-agents/
-├── init.sh                      # CANNBot 风格安装脚本
-├── AGENTS.md                    # primary orchestrator
+├── init.sh
+├── AGENTS.md
 ├── README.md
 ├── agents/
-│   ├── serving-baseline-reproduce-subagent.md   # Phase 1 · 基线配置生成
-│   └── serving-tuning-subagent.md               # Phase 2 · 并行策略调优
+│   ├── serving-baseline-reproduce-subagent.md
+│   ├── serving-tuning-subagent.md
+│   └── serving-profiling-analysis-subagent.md   # 独立流水线 · msagent Profiler
 └── workflows/
-    ├── serving-perf-optimization-workflow.md
+    ├── primary-workflow.md              # 顶层：只列平级路径
+    ├── serving-tuning-workflow.md       # 路径 A · 服务化调优
+    ├── profiling-analysis-workflow.md   # 路径 B · Profiling 分析
     ├── templates/
-    │   ├── deploy-config.template.md
-    │   ├── baseline-summary-template.md
-    │   └── tuning-process-template.md   # Phase 2 唯一模板（中间过程+状态）
     └── references/
         ├── user-config-format.md
-        └── subagent-prompt-templates.md
+        ├── subagent-prompt-templates.md
+        └── msprof-mcp-tools.md
 ```
 
 ## 与 Skills 的对应关系
 
-| Phase | Subagent | Skill | 当前 |
+| Phase / 场景 | Subagent | Skill | 当前 |
 | --- | --- | --- | --- |
-| 1 基线配置生成 | `serving-baseline-reproduce-subagent` | `ascend-baseline-generator` | 已实现 |
-| 2 并行策略调优 | `serving-tuning-subagent` | `serving-parallel-strategy-tuning`（入口） | 已实现（离线） |
-| 2 子步骤 | （由入口编排） | `find-possible-parallel-strategy` | 已实现 |
-| 2 子步骤 | （由入口编排） | `serving-kv-cache-capacity` | 已实现 |
-| 2 子步骤 | （由入口编排） | `serving-slo-concurrency` | 已实现 |
+| 服务化 · 1 基线 | `serving-baseline-reproduce-subagent` | `ascend-baseline-generator` | 已实现 |
+| 服务化 · 2 调优 | `serving-tuning-subagent` | `serving-parallel-strategy-tuning`（入口） | 已实现（离线） |
+| 服务化 · 2 子步骤 | （由入口编排） | `find-possible-parallel-strategy` 等 | 已实现 |
+| **Profiling（独立）** | `serving-profiling-analysis-subagent` | Profiler 套件 + `msprof-mcp-setup` | 已实现；不在服务化路径内触发 |
 
-Phase 2 为离线估算；线上部署/压测相关 skill（`serving-cfg-extract`、`serving-perf-metrics` 等）仍可后续接入。
+Profiling skills（与 msagent `Profiler.yml` 一致，另加本仓接入 skill）：
+
+- `msprof-mcp-setup`
+- `ascend-profiler-data-validation` / `ascend-profiler-db-explorer`
+- `ascend-computation-analysis` / `ascend-communication-analysis` / `ascend-schedule-analysis`
+- `ascend-msprof-analyze-cli` / `ascend-cluster-fast-slow-rank-detector`
+- `op-mfu-calculator` / `github-raw-fetch`

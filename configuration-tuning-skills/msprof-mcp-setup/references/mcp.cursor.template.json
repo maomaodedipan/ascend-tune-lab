@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "msprof-mcp": {
+      "type": "stdio",
+      "command": "msprof-mcp",
+      "args": []
+    }
+  }
+}
