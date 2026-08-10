@@ -17,7 +17,7 @@
 **工作目录 `workdir`**：用户指定 → 否则当前路径下的 `workspace/`。  
 **不是**「整个 git 仓库根」；仓库根仅用于读取 skills/workflows；运行产物一律进 `workdir`。
 
-**落盘约定**：流水线运行过程中生成的配置副本、baseline 报告、调优过程报告与汇总状态，**全部写在 `workdir` 内**（详见 `workflows/serving-perf-optimization-workflow.md`「工作目录确定」与「报告落盘约定」）。
+**落盘约定**：流水线运行过程中生成的配置副本、baseline 报告、调优过程报告与汇总状态，**全部写在 `workdir` 内**（详见 `workflows/serving-tuning-workflow.md`「报告落盘约定」；顶层路由见 `workflows/primary-workflow.md`）。
 
 ### 模型 config（Phase 0 硬门禁）
 

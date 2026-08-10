@@ -253,7 +253,7 @@ write_manifest() {
   "team": "$TEAM",
   "level": "$LEVEL",
   "tool": "$TOOL",
-  "workflow_entry": "workflows/serving-perf-optimization-workflow.md",
+  "workflow_entry": "workflows/primary-workflow.md",
   "installed_skills": $skills_json,
   "installed_agents": $agents_json,
   "config_root": "$CONFIG_ROOT",
@@ -299,7 +299,9 @@ write_manifest
 
 health_ok=true
 [ -L "$CONFIG_ROOT/workflows" ] || [ -d "$CONFIG_ROOT/workflows" ] || { err "workflows mount missing under $CONFIG_ROOT"; health_ok=false; }
-[ -f "$CONFIG_ROOT/workflows/serving-perf-optimization-workflow.md" ] || { err "workflow entry missing"; health_ok=false; }
+[ -f "$CONFIG_ROOT/workflows/primary-workflow.md" ] || { err "workflow entry missing"; health_ok=false; }
+[ -f "$CONFIG_ROOT/workflows/serving-tuning-workflow.md" ] || { err "serving-tuning workflow missing"; health_ok=false; }
+[ -f "$CONFIG_ROOT/workflows/profiling-analysis-workflow.md" ] || { err "profiling-analysis workflow missing"; health_ok=false; }
 [ -d "$TUNE_DIR/skills" ] || { err "skills dir missing"; health_ok=false; }
 [ -d "$CONFIG_ROOT/agents" ] || { err "agents dir missing"; health_ok=false; }
 
@@ -315,5 +317,5 @@ echo ""
 echo -e "  ${BOLD}Quick start:${NC}"
 echo -e "  ${CYAN}1.${NC} 在目标项目打开 Agent（$TOOL）"
 echo -e "  ${CYAN}2.${NC} 启动 Agent；未指定工作目录时使用 ${DIM}./workspace${NC}；若无 ${DIM}deploy-config.md${NC}，将自动生成模板，填完 ${DIM}## 基本参数${NC} 后重新发起"
-echo -e "  ${CYAN}3.${NC} Primary 将 Read：${DIM}workflows/serving-perf-optimization-workflow.md${NC}"
+echo -e "  ${CYAN}3.${NC} Primary 将 Read：${DIM}workflows/primary-workflow.md${NC}（再进入服务化调优 / Profiling 等平级路径）"
 echo ""

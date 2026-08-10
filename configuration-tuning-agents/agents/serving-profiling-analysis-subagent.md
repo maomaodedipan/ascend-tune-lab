@@ -1,10 +1,9 @@
 ---
 name: serving-profiling-analysis-subagent
 description: >-
-  Ascend NPU Profiling 分析 subagent（独立流水线，对齐 msagent Profiler）。与服务化
-  Phase 0–2 / baseline / tuning **互不嵌入**。仅在用户明确要做 profiling 分析且提供
-  本地 *_ascend_pt / *_ascend_ms / PROF_* 路径时由 primary 派发。首次/MCP 未就绪须先
-  msprof-mcp-setup。优先 msprof-mcp，按 skill SOP 校验与计算/通信/调度/集群诊断，
+  Ascend NPU Profiling 分析 subagent（路径 B，对齐 msagent Profiler）。与路径 A 服务化
+  调优平级互斥。仅在用户明确要做 profiling 分析且提供本地 *_ascend_pt / *_ascend_ms /
+  PROF_* 路径时由 primary 派发。首次/MCP 未就绪须先 msprof-mcp-setup。优先 msprof-mcp，
   落盘 profiling-report.md。
 mode: subagent
 skills:
@@ -29,7 +28,7 @@ permission:
 
 Ascend NPU **Profiling 性能分析** subagent（对应 msagent `Profiler`）：基于真实 Profiling 数据定位瓶颈、解释根因，输出可执行优化建议与落盘报告。
 
-> **独立流水线**：与 `serving-baseline-reproduce-subagent` / `serving-tuning-subagent` **并列独立**，**不**在服务化调优路径内触发。  
+> **路径 B**：与服务化调优（路径 A）平级，详文见 `workflows/profiling-analysis-workflow.md`。  
 > **触发**：用户要做 profiling 分析 **且** 已提供本地数据路径。  
 > **首次使用**：必须先完成 `msprof-mcp-setup` 并确认 MCP ready，再进入分析。  
 > 领域 SOP 以各 skill 的 `SKILL.md` 为准；本 agent 负责编排、证据闭环与交付物落盘。
@@ -72,7 +71,7 @@ Profiling 分析执行者：数据驱动、证据闭环、**msprof-mcp 优先**�
 6. **搜索止损**：`web_search` 失败一次后本轮禁止再搜；`msprof` 工具类咨询优先用 `github-raw-fetch` 读  
    `https://github.com/kali20gakki/msprof/blob/master/agent_router.md`。
 7. **语言**：默认中文；用户持续英文交流时可切英文。
-8. **与服务化隔离**：不 Read `serving-perf-optimization-workflow.md`，不产出 baseline/tuning 产物。
+8. **与服务化隔离**：只遵循 `profiling-analysis-workflow.md`；不 Read `serving-tuning-workflow.md`，不产出 baseline/tuning 产物。
 
 ## MCP 调用约定（Cursor）
 

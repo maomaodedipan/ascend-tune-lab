@@ -4,7 +4,7 @@ vLLM-Ascend 服务化性能优化编排，架构 **Plugin → Agent → Skill**�
 
 - **Primary**：[`AGENTS.md`](AGENTS.md) — `serving-perf-optimization`（双流水线路由）
 - **Subagents**：[`agents/`](agents/) — 服务化 Phase 1 / Phase 2，以及 **独立** Profiling（对齐 msagent Profiler）
-- **工作流**：[`workflows/`](workflows/) — 服务化编排；Profiling 约定见 `references/profiling-analysis.md`
+- **工作流**：[`workflows/`](workflows/) — 顶层 `primary-workflow.md` + 平级路径（服务化调优 / Profiling 分析）
 - **安装**：[`init.sh`](init.sh) — 挂载 skills / agents / **workflows** 到目标项目
 
 ## 安装（推荐）
@@ -27,7 +27,7 @@ vLLM-Ascend 服务化性能优化编排，架构 **Plugin → Agent → Skill**�
 | **Workflows** | `.cursor/workflows/` **与** `./workflows/`（符号链接到本插件 `workflows/`） |
 | 仓库路径 | `./configuration-tuning-skills/`、`./configuration-tuning-agents/` |
 
-安装后 primary 读取的工作流入口为：**`workflows/serving-perf-optimization-workflow.md`**。
+安装后 primary 读取的工作流入口为：**`workflows/primary-workflow.md`**（再进入平级路径详文）。
 
 Profiling MCP 接入见 skill：`configuration-tuning-skills/msprof-mcp-setup/`（独立 bootstrap，不绑在 init 默认路径）。
 
@@ -52,12 +52,13 @@ configuration-tuning-agents/
 │   ├── serving-tuning-subagent.md
 │   └── serving-profiling-analysis-subagent.md   # 独立流水线 · msagent Profiler
 └── workflows/
-    ├── serving-perf-optimization-workflow.md
+    ├── primary-workflow.md              # 顶层：只列平级路径
+    ├── serving-tuning-workflow.md       # 路径 A · 服务化调优
+    ├── profiling-analysis-workflow.md   # 路径 B · Profiling 分析
     ├── templates/
     └── references/
         ├── user-config-format.md
         ├── subagent-prompt-templates.md
-        ├── profiling-analysis.md
         └── msprof-mcp-tools.md
 ```
 

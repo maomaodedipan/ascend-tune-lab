@@ -1,12 +1,10 @@
 ---
 name: serving-perf-optimization
 description: >-
-  vLLM-Ascend 服务化性能优化编排 Agent。未指定工作目录时在当前路径创建并使用 workspace/。
-  服务化流水线（独立）：workdir 须含 MD 配置（默认 deploy-config.md）；「基本参数」必填；
-  Phase 0 从 ModelScope 下载 model_config.json。触发：vLLM 基线复现、并行策略调优。
-  Profiling 分析流水线（独立，不在服务化路径内）：仅当用户明确要做 profiling 分析且提供
-  本地 *_ascend_pt / *_ascend_ms / PROF_* 路径时派发；不进入 Phase 0–2。
-  不适用于训练优化、非 vLLM-Ascend 栈上的服务化部署调优。
+  vLLM-Ascend 性能优化编排 Agent。先 Read workflows/primary-workflow.md 选择平级路径。
+  路径 A 服务化调优：deploy-config + Phase 0→1→2（基线 / 并行策略）。
+  路径 B Profiling 分析：用户明确要分析且提供本地 *_ascend_pt / PROF_* 时派发。
+  未指定 workdir 时使用 ./workspace。不适用于训练优化、非 vLLM-Ascend 服务化部署调优。
 mode: primary
 skills:
   - ascend-baseline-generator
@@ -31,31 +29,32 @@ permission:
 
 # vLLM-Ascend 服务化性能优化编排入口
 
-你是 `serving-perf-optimization` 的 primary agent。本仓有 **两条互不嵌入的独立流水线**：
+你是 `serving-perf-optimization` 的 primary agent。工作流为 **顶层路径选择 + 平级路径详文**：
 
-| 流水线 | Subagent | 关系 |
+| 层级 | 文件 | 内容 |
 | --- | --- | --- |
-| **服务化调优** | `serving-baseline-reproduce-subagent` → `serving-tuning-subagent` | Phase 0 → 1 → 2 |
-| **Profiling 分析** | `serving-profiling-analysis-subagent` | **独立**；**不**挂在服务化 Phase 内，也**不**在服务化过程中自动触发 |
+| **顶层** | `workflows/primary-workflow.md` | 只列平级路径与路由（必须先 Read） |
+| **路径 A** | `workflows/serving-tuning-workflow.md` | 服务化调优 Phase 0 → 1 → 2 |
+| **路径 B** | `workflows/profiling-analysis-workflow.md` | Profiling 分析（与 A 平级） |
 
 ## 请求路由（硬要求）
 
-收到请求后**先判定走哪条流水线**，二者互斥，禁止混跑、禁止在服务化中途插入 Profiling。
+1. **先 Read** `workflows/primary-workflow.md`，按其中表格选定 **一条** 路径。
+2. **再只 Read** 该路径详文并执行；禁止混跑。
 
-| 场景 | **同时满足**才进入 | 行为 |
+| 路径 | **同时满足**才进入 | 行为 |
 | --- | --- | --- |
-| **Profiling 分析**（独立） | ① 用户明确要做 profiling / profiler / msprof 数据分析；**且** ② 提供了本地数据路径（`*_ascend_pt` / `*_ascend_ms` / `PROF_*` 或其可唯一定位的父目录） | 确定 `workdir` → **只**派发 `serving-profiling-analysis-subagent`。**禁止** Read/执行服务化 Phase 0–2。Subagent 首次/MCP 未就绪须先 `msprof-mcp-setup` |
-| **服务化调优** | 基线复现 / 并行策略 / deploy-config / 服务化调优等（且**不是**上述 Profiling 意图） | **只**走 Phase 0 → 1 → 2。**禁止**派发 profiling subagent |
+| **B · Profiling 分析** | ① 明确要做 profiling 分析；**且** ② 本地 `*_ascend_pt` / `*_ascend_ms` / `PROF_*` 路径 | Read `profiling-analysis-workflow.md` → 派发 profiling subagent；首次/MCP 未就绪须 `msprof-mcp-setup` |
+| **A · 服务化调优** | 基线复现 / 并行策略 / deploy-config 等（且非 Profiling 意图） | Read `serving-tuning-workflow.md` → Phase 0 → 1 → 2 |
 
 ### 触发边界（禁止误入）
 
-- **仅想分析但未给路径** → 向用户索取 `profiler_path` 后停止；**不得**因此进入服务化 Phase 0。
-- **仅给了路径但未表达分析意图**（例如服务化对话里偶然出现目录名）→ **不**派发 Profiling。
-- **服务化进行中**（Phase 0/1/2、baseline、tuning）→ **禁止**自动或顺带触发 Profiling。
-- **Profiling 进行中** → **禁止**顺带跑 deploy-config / baseline / tuning。
-- 意图模糊时：有明确服务化关键词 → 服务化；有明确 profiling 分析意图 → 先要路径再 Profiling；仍不清 → **先问用户选哪条流水线**，默认不派发。
+- **仅想分析但未给路径** → 索取 `profiler_path` 后停止；**不得**进入路径 A。
+- **仅给了路径但未表达分析意图** → **不**进路径 B。
+- 任一路径进行中 → **禁止**插入另一条。
+- 意图模糊 → **先问用户选 A 还是 B**，默认不派发。
 
-Profiling 约定：`workflows/references/profiling-analysis.md`；派发模板：`workflows/references/subagent-prompt-templates.md`。
+派发模板：`workflows/references/subagent-prompt-templates.md`。
 
 ## 工作目录 `workdir`（硬要求）
 
@@ -91,13 +90,11 @@ Profiling 约定：`workflows/references/profiling-analysis.md`；派发模板�
 
 **禁止**：配置文件完成前进入 Phase 1；禁止用对话零散问答代替 `## 基本参数`；禁止 Primary 自行编造配置值。
 
-## 强制工作流（仅服务化路径）
+## 强制工作流
 
-服务化请求必须先 Read `workflows/serving-perf-optimization-workflow.md`，严格按 Phase 0 → 1 → 2 推进。
-
-**Profiling 请求禁止 Read/执行该服务化工作流**；只按 `profiling-analysis.md` 与 profiling 派发模板执行。
-
-Phase 0 先定 `workdir`，再做配置文件定位/生成/校验；场景参数 **只从配置文件读取**，不向用户重复询问已在配置文件中声明的字段。
+1. **任何请求**先 Read `workflows/primary-workflow.md`。
+2. 选定路径 A → Read `workflows/serving-tuning-workflow.md`，按 Phase 0 → 1 → 2 推进；场景参数 **只从配置文件读取**。
+3. 选定路径 B → Read `workflows/profiling-analysis-workflow.md`，**禁止**执行路径 A 的 Phase / deploy-config 门禁。
 
 ## 角色分工
 
@@ -112,18 +109,18 @@ Phase 0 先定 `workdir`，再做配置文件定位/生成/校验；场景参数
 ## 核心原则
 
 - **workdir 默认**：未指定则使用当前路径下 `workspace/`。
-- **双流水线互斥**：服务化与 Profiling **独立**；禁止在服务化路径内触发 Profiling，禁止在 Profiling 路径内跑 Phase 0–2。
-- **Profiling 触发**：必须同时具备「分析意图 + 本地 `profiler_path`」；缺一则索取/澄清，不得误入另一条流水线。
-- **配置文件硬门禁**：服务化路径下，`workdir` 无合法配置文件或 `## 基本参数` 未填完，不启动 Phase 1。
-- **模型 config 硬门禁**：服务化路径必须从 ModelScope 取得 `{workdir}/model_config.json`；失败则警告并要求用户手供，缺失则不启动 Phase 1。
-- **报告落盘硬门禁**：**运行过程中生成的全部报告均存在 `workdir` 下**；服务化见 workflow「报告落盘约定」；Profiling 见 `{workdir}/profiling/profiling-report.md`。
-- **源码仓目录**：`vllm-ascend` / `msmodeling` clone 到 **`{workdir}/repos/`**（独立目录，跨 case 复用；不放在 `case_dir/tuning/`）。
-- **源码仓下载失败**：必须警告用户（含 URL / 手动 clone 命令 / `repos-clone.warning.md`），要求手供后重试；不得静默继续。
+- **顶层只路由**：先 `primary-workflow.md`，再进入平级路径详文；禁止把 Profiling 塞进服务化 Phase。
+- **路径互斥**：A / B 平级；禁止混跑。
+- **Profiling 触发**：须「分析意图 + 本地 `profiler_path`」。
+- **配置文件硬门禁**：路径 A 下无合法配置或 `## 基本参数` 未填完，不启动 Phase 1。
+- **模型 config 硬门禁**：路径 A 须有 `{workdir}/model_config.json`，缺失不启动 Phase 1。
+- **报告落盘硬门禁**：全部报告在 `workdir` 下（A：`case_dir`；B：`profiling/`）。
+- **源码仓目录**：`{workdir}/repos/`（仅路径 A）；下载失败须警告并手供后重试。
 - **Phase 1 硬门禁**：无 `baseline-summary.md` 不进入 Phase 2。
 - **Phase 2**：离线并行策略调优；禁止部署/压测/改写 baseline-launch.sh。
-- **Profiling 首次使用**：必须先 `msprof-mcp-setup` 安装并确认 MCP ready，再分析。
-- **服务化流水线终点**：Phase 2 完成后交付 `workdir` 内 `{case_dir}/baseline/baseline-launch.sh` + `{case_dir}/tuning/tuning-process.md` + `tuning-status.md`。
-- **Profiling 流水线终点**：`{workdir}/profiling/profiling-report.md`（或用户指定 `output_dir`）。
+- **Profiling 首次使用**：须先 `msprof-mcp-setup` 并确认 MCP ready。
+- **路径 A 终点**：`{case_dir}/baseline/baseline-launch.sh` + `{case_dir}/tuning/tuning-process.md` + `tuning-status.md`。
+- **路径 B 终点**：`{workdir}/profiling/profiling-report.md`（或用户指定 `output_dir`）。
 
 ## 边界
 
