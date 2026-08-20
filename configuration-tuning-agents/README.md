@@ -2,9 +2,9 @@
 
 vLLM-Ascend 服务化性能优化编排，架构 **Plugin → Agent → Skill**，目录命名与 [`configuration-tuning-skills/`](../configuration-tuning-skills/) 对称。
 
-- **Primary**：[`AGENTS.md`](AGENTS.md) — `serving-perf-optimization`（双流水线路由）
-- **Subagents**：[`agents/`](agents/) — 服务化 Phase 1 / Phase 2，以及 **独立** Profiling（对齐 msagent Profiler）
-- **工作流**：[`workflows/`](workflows/) — 顶层 `primary-workflow.md` + 平级路径（服务化调优 / Profiling 分析）
+- **Primary**：[`AGENTS.md`](AGENTS.md) — `serving-perf-optimization`（三路径路由）
+- **Subagents**：[`agents/`](agents/) — 服务化 Phase 1 / Phase 2，独立 Profiling，以及 **路径 C · PD 配比** 四阶段
+- **工作流**：[`workflows/`](workflows/) — 顶层 `primary-workflow.md` + 平级路径（服务化调优 / Profiling / PD 配比）
 - **安装**：[`init.sh`](init.sh) — 挂载 skills / agents / **workflows** 到目标项目
 
 ## 安装（推荐）
@@ -38,7 +38,8 @@ Profiling MCP 接入见 skill：`configuration-tuning-skills/msprof-mcp-setup/`�
 1. 将 `AGENTS.md` 复制或链接到项目编排入口。
 2. 将 `workflows/` 链接到项目根 `workflows/`，保证 AGENTS 内相对路径可解析。
 3. **服务化**：准备 MD 配置（默认 `{workdir}/deploy-config.md`），走 Phase 0→1→2。  
-   **Profiling（独立）**：明确要做分析 **且** 提供本地 `*_ascend_pt` / `PROF_*` 路径；**不会**在服务化调优路径内自动触发。
+   **Profiling（独立）**：明确要做分析 **且** 提供本地 `*_ascend_pt` / `PROF_*` 路径；**不会**在服务化调优路径内自动触发。  
+   **PD 配比（路径 C）**：明确要算最佳 PD 配比；准备 `{workdir}/pd-deploy-config.md`；未指定容器时 Agent 按一机一容器拉起。
 
 ## 目录结构
 
@@ -50,16 +51,18 @@ configuration-tuning-agents/
 ├── agents/
 │   ├── serving-baseline-reproduce-subagent.md
 │   ├── serving-tuning-subagent.md
-│   └── serving-profiling-analysis-subagent.md   # 独立流水线 · msagent Profiler
+│   ├── serving-profiling-analysis-subagent.md
+│   ├── serving-pd-config-check-subagent.md
+│   ├── serving-pd-deploy-subagent.md
+│   ├── serving-aisbench-install-subagent.md
+│   └── serving-pd-ratio-benchmark-subagent.md
 └── workflows/
-    ├── primary-workflow.md              # 顶层：只列平级路径
-    ├── serving-tuning-workflow.md       # 路径 A · 服务化调优
-    ├── profiling-analysis-workflow.md   # 路径 B · Profiling 分析
+    ├── primary-workflow.md
+    ├── serving-tuning-workflow.md
+    ├── profiling-analysis-workflow.md
+    ├── pd-ratio-workflow.md
     ├── templates/
     └── references/
-        ├── user-config-format.md
-        ├── subagent-prompt-templates.md
-        └── msprof-mcp-tools.md
 ```
 
 ## 与 Skills 的对应关系
@@ -70,6 +73,10 @@ configuration-tuning-agents/
 | 服务化 · 2 调优 | `serving-tuning-subagent` | `serving-parallel-strategy-tuning`（入口） | 已实现（离线） |
 | 服务化 · 2 子步骤 | （由入口编排） | `find-possible-parallel-strategy` 等 | 已实现 |
 | **Profiling（独立）** | `serving-profiling-analysis-subagent` | Profiler 套件 + `msprof-mcp-setup` | 已实现；不在服务化路径内触发 |
+| **PD 配比 · 1** | `serving-pd-config-check-subagent` | `pd-config-env-check` | 已实现 |
+| **PD 配比 · 2** | `serving-aisbench-install-subagent` | `aisbench-install` | 已实现（部署前） |
+| **PD 配比 · 3** | `serving-pd-deploy-subagent` | `pd-deploy` | 已实现 |
+| **PD 配比 · 4** | `serving-pd-ratio-benchmark-subagent` | `pd-ratio-benchmark` | 已实现 |
 
 Profiling skills（与 msagent `Profiler.yml` 一致，另加本仓接入 skill）：
 
