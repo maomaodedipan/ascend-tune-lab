@@ -1,5 +1,6 @@
 ---
 name: pd-config-env-check
+invoke: pipeline-only
 description: >-
   Validate PD-disaggregation Prefill/Decode launch commands and environment for
   Path C. Rewrite only network fields plus computed kv_port/engine_id/dp_size;
@@ -8,6 +9,10 @@ description: >-
 ---
 
 # pd-config-env-check
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 C Phase 1 的 `serving-pd-config-check-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/pd-ratio/check/`（含 status）。即使「只做环境检查」也禁止快路径，以免误写 `pd-check-status`。约定见 `configuration-tuning-skills/README.md`。
 
 路径 C · Phase 1。校验用户 PD 分离拉起命令与执行环境，按公式补齐 PD 参数，产出可执行 `rendered/`（含 **Mooncake master**）。
 

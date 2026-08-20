@@ -7,13 +7,15 @@
 
 > 用户输入：先定 `workdir`（未指定则 `./workspace`），再在其中放 `pd-deploy-config.md`。格式见 [`references/pd-user-config-format.md`](references/pd-user-config-format.md)。
 
-**与路径 A/B 平级、互斥**：不进入服务化 Phase 0–2，不要求 profiling 路径。
+**与路径 A/B 平级、互斥**：不进入服务化 Phase 0–2，不要求 profiling 路径。进入本路径后禁止改走独立 skill 快路径。
 
 ## 触发（进入本路径前已由 primary 确认）
 
 用户明确要做：**最佳 PD 配比 / PD 配比 / Prefill-Decode 配比 / PD ratio** 等。
 
-意图模糊 → primary 先问 A/B/C。
+意图模糊 → primary 先问：独立工具 / A / B / C。
+
+**Skill 调用**：本路径四个 skill 均为 `pipeline-only`。Read `SKILL.md` 时标 `invoke=pipeline`；产物只写 `{workdir}/pd-ratio/`。即使「只检查 / 只安装 / 只部署」也禁止快路径。约定见 `configuration-tuning-skills/README.md`。
 
 ## 报告落盘约定（硬要求）
 
@@ -136,7 +138,7 @@ C5. Primary 交付终态报告路径，路径 C 结束
 5. **TTFT / TPOT**：向用户询问限制；用户提供则写入配置；仍不提供 → 默认 **TTFT 不设限制**、**TPOT=50ms**，写入配置并在 `progress.md` 注明 `slo_source=default`。
 6. 通过 → 创建 `pd-ratio/`，写 `progress.md`，进入 Phase 1。
 
-## Skill 套件
+## Skill 套件（全部 `pipeline-only`）
 
 - `pd-config-env-check`
 - `aisbench-install`

@@ -17,6 +17,7 @@ skills:
   - ascend-cluster-fast-slow-rank-detector
   - op-mfu-calculator
   - github-raw-fetch
+  - compare-analyzer
 permission:
   read: allow
   edit: allow
@@ -31,7 +32,8 @@ Ascend NPU **Profiling 性能分析** subagent（对应 msagent `Profiler`）：
 > **路径 B**：与服务化调优（路径 A）平级，详文见 `workflows/profiling-analysis-workflow.md`。  
 > **触发**：用户要做 profiling 分析 **且** 已提供本地数据路径。  
 > **首次使用**：必须先完成 `msprof-mcp-setup` 并确认 MCP ready，再进入分析。  
-> 领域 SOP 以各 skill 的 `SKILL.md` 为准；本 agent 负责编排、证据闭环与交付物落盘。
+> 领域 SOP 以各 skill 的 `SKILL.md` 为准（本路径一律 `invoke=pipeline`）；本 agent 负责编排、证据闭环与交付物落盘。  
+> `pipeline-only` 分析套件、`msprof-mcp-setup`、`github-raw-fetch`、`compare-analyzer` 禁止快路径；`dual` skill（`op-mfu-calculator`）在本路径内产物只写 `{workdir}/profiling/`，禁止写 `{workdir}/skills/`。
 
 ## Role Layer（角色层）
 
@@ -43,7 +45,7 @@ Profiling 分析执行者：数据驱动、证据闭环、**msprof-mcp 优先**�
 
 1. **【首次安装硬门禁】** 分析前必须确认 msprof-mcp 已安装且 MCP 已连接：
    - `GetMcpTools` 查找 `msprof-mcp` / `user-msprof-mcp`（或等价）；
-   - **若不存在 / 未 ready** → **必须先** Read 并执行 `configuration-tuning-skills/msprof-mcp-setup/SKILL.md`（按 IDE 侧跑 `bootstrap-msprof-mcp.sh` 或 Windows pip），完成安装与配置写入；
+   - **若不存在 / 未 ready** → **必须先** Read 并执行 `configuration-tuning-skills/msprof-mcp-setup/SKILL.md`（`invoke=pipeline`；按 IDE 侧跑 `bootstrap-msprof-mcp.sh` 或 Windows pip），完成安装与配置写入；
    - 安装后提示用户 **Reload Window / 重启 IDE**，再次确认 MCP ready 后才继续分析；
    - **禁止**在未完成 setup 时直接开始 profiling 分析或静默退化为纯本地读文件。
 2. 确认用户提供的 **明确性能数据路径**（`*_ascend_pt` / `*_ascend_ms` / `PROF_*` 或含上述目录的父路径）。
@@ -91,18 +93,19 @@ Profiling 分析执行者：数据驱动、证据闭环、**msprof-mcp 优先**�
 
 ## Skill 路由（按场景 Read）
 
-| 场景 | Skill |
-| --- | --- |
-| **首次安装 / MCP 未连接（硬门禁）** | `msprof-mcp-setup`（必须先完成） |
-| 分析前完整性校验 | `ascend-profiler-data-validation` |
-| 自然语言 → 安全 SQL / DB 探索 | `ascend-profiler-db-explorer` |
-| 计算瓶颈 | `ascend-computation-analysis` |
-| 通信瓶颈 | `ascend-communication-analysis` |
-| Host Bound / 下发 / Free-time | `ascend-schedule-analysis` |
-| `msprof-analyze` 集群/advisor CLI | `ascend-msprof-analyze-cli` |
-| 集群快慢卡 | `ascend-cluster-fast-slow-rank-detector` |
-| 算子 MFU | `op-mfu-calculator` |
-| msprof 文档/路由问答 | `github-raw-fetch` |
+| 场景 | Skill | invoke |
+| --- | --- | --- |
+| **首次安装 / MCP 未连接（硬门禁）** | `msprof-mcp-setup`（必须先完成） | pipeline-only |
+| 分析前完整性校验 | `ascend-profiler-data-validation` | pipeline-only |
+| 自然语言 → 安全 SQL / DB 探索 | `ascend-profiler-db-explorer` | pipeline-only |
+| 计算瓶颈 | `ascend-computation-analysis` | pipeline-only |
+| 通信瓶颈 | `ascend-communication-analysis` | pipeline-only |
+| Host Bound / 下发 / Free-time | `ascend-schedule-analysis` | pipeline-only |
+| `msprof-analyze` 集群/advisor CLI | `ascend-msprof-analyze-cli` | pipeline-only |
+| compare xlsx 解读（HTML / 中文表） | `compare-analyzer` | pipeline-only |
+| 集群快慢卡 | `ascend-cluster-fast-slow-rank-detector` | pipeline-only |
+| 算子 MFU | `op-mfu-calculator` | dual · 本路径 pipeline |
+| msprof 文档/路由问答 | `github-raw-fetch` | pipeline-only |
 
 ## Profiling 数据分析流程
 
@@ -118,6 +121,7 @@ Profiling 分析执行者：数据驱动、证据闭环、**msprof-mcp 优先**�
 
 - **单卡**：Timeline → 算子热点 → 通信（若存在）→ 采集配置
 - **多卡**：先 `msprof_analyze_advisor` 全局诊断，再按 Rank 下钻
+- **compare xlsx**：`ascend-msprof-analyze-cli` 产出（或本路径内用户已提供）`performance_comparison_result_*.xlsx` 后，调用 `compare-analyzer`，产物写入 `{output_dir}`
 
 ### 步骤 3：交叉验证
 

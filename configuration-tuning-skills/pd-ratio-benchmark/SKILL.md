@@ -1,11 +1,16 @@
 ---
 name: pd-ratio-benchmark
+invoke: pipeline-only
 description: >-
   Run AISBench tests to measure Prefill-side and Decode-side QPS under SLO, then
   compute best PD instance ratio (Path C Phase 4). Use after aisbench-install.
 ---
 
 # pd-ratio-benchmark
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 C Phase 4 的 `serving-pd-ratio-benchmark-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/pd-ratio/benchmark/`。禁止独立压测。约定见 `configuration-tuning-skills/README.md`。
 
 路径 C · Phase 4。用 AISBench 实测 QPS_P / QPS_D，计算最佳 PD 配比；按集群**整机**卡数/机数拟合可达拓扑并做验证 e2e（单卡吞吐对比），落盘终态报告。
 

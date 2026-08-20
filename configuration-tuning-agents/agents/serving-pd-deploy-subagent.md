@@ -16,7 +16,7 @@ permission:
 
 # Serving PD Deploy Subagent（路径 C · Phase 3）
 
-执行 **PD 分离部署**。Skill SOP 以 `configuration-tuning-skills/pd-deploy/SKILL.md` 为准。
+执行 **PD 分离部署**。Skill SOP 以 `configuration-tuning-skills/pd-deploy/SKILL.md` 为准（`invoke=pipeline`，`pipeline-only`，禁止快路径 / 独立部署）。
 
 ## Role Layer（角色层）
 

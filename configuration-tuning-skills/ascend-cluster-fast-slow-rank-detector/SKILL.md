@@ -1,9 +1,14 @@
 ---
 name: ascend-cluster-fast-slow-rank-detector
+invoke: pipeline-only
 description: 专门用于 Ascend 集群 Profiling 性能数据的“快慢卡”诊断专家技能。当用户提供【集群性能数据目录/路径】并要求分析【快慢卡】、【慢节点】、【负载不均衡】或【集群瓶颈】时，必须触发此技能。该技能会自动接收集群路径，调度相关工具输出快慢卡的宏观定性与微观根因（如 Host 下发瓶颈、算子计算劣化）。
 ---
 
 # 集群快慢卡诊断
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。即使「只要快慢卡」也禁止快路径。约定见 `configuration-tuning-skills/README.md`。
 
 ## 1. 技能目标
 在 Ascend 多卡/集群场景下，利用msprof-analyze命令工具结合专家规则，自动识别因计算、通信或 Host 下发导致的性能瓶颈卡（慢卡），并下钻定位微观根因。

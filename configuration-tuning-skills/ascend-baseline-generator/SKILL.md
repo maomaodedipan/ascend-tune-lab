@@ -1,5 +1,6 @@
 ---
 name: ascend-baseline-generator
+invoke: pipeline-only
 description: >-
   Finds the best vLLM-Ascend deployment config (low-latency or high-throughput)
   from local baseline markdown docs by matching device, model, quantization, NPU
@@ -11,6 +12,10 @@ description: >-
 ---
 
 # ascend-baseline-generator — vLLM-Ascend 基线配置生成
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A Phase 1 的 `serving-baseline-reproduce-subagent` 以 `invoke=pipeline` 调用。产物写 `{case_dir}/baseline/`。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 根据 MD 配置文件中的设备/模型标识字段（device_type、model_name、quantization、num_npus、deploy_strategy），
 优先从本 skill 目录下的 `baseline-docs/` 部署文档中查找匹配项。只有所有 5 个标识字段都匹配时，才根据输入输出长度自动匹配最佳配置行并替换上下文长度。

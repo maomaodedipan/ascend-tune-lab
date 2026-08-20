@@ -1,9 +1,14 @@
 ---
 name: ascend-communication-analysis
+invoke: pipeline-only
 description: Analyze Ascend NPU collective communication profiling data with a DB-first workflow. Use when the user provides `cluster_analysis_output/cluster_analysis.db`, rank-level `analysis.db`, rank-level `ascend_pytorch_profiler_{rank_id}.db`, together with `profiler_info.json`, and asks about HCCL or hcom communication cost, collective communication TOP ops, wait time, slow rank/straggler, Notify Wait, bandwidth, retry, relay, SDMA/RDMA/HCCS links, communication matrix, or Ascend communication fault patterns.
 ---
 
 # Ascend Communication Analysis
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。即使「只要其中一张表」也禁止快路径。约定见 `configuration-tuning-skills/README.md`。
 
 ## Goal
 

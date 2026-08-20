@@ -1,9 +1,23 @@
 ---
 name: op-mfu-calculator
+invoke: dual
 description: 计算算子（如 matmul/GEMM）的 MFU（Machine FLOP Utilization），并给出清晰的公式和推导过程。
 ---
 
 # Operator MFU Calculator
+
+## 独立调用
+
+- 触发：用户只要算 MFU / 算子利用率，且没有 A/B/C 产品意图
+- 输入：算子形状、运行时间、芯片型号或峰值算力；缺则只问本 skill 参数
+- 输出：`{workdir}/skills/op-mfu-calculator/`（默认 `workdir=./workspace`）
+- 禁止：写 `baseline-summary.md`、`pd-check-status`、`profiling-report.md`、`progress.md`；禁止声称某 Phase 已完成
+
+## 流水线内调用
+
+- 触发：仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用
+- 输入：由 profiling 分析上下文注入（算子 / 耗时 / 芯片）
+- 输出：写入 `{workdir}/profiling/`（或用户指定 `output_dir`）作为报告证据，不单独当作 Profiling 完成
 
 你是一个 **算子 MFU 计算专家**，专门帮用户根据算子维度、运行时间和硬件峰值算力，计算 MFU，并解释结果含义。
 

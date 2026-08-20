@@ -1,9 +1,14 @@
 ---
 name: serving-cfg-extract
+invoke: pipeline-only
 description: "从服务化日志启动阶段提取 non-default args 关键参数（模型路径、量化、并行策略、配置、特性开关等），生成 Excel 报告。"
 ---
 
 # Serving Config Extract (服务化启动配置提取) 🦞
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A 对应 subagent 以 `invoke=pipeline` 调用（预留线上日志调优；当前 Phase 2 **不**执行）。产物写 `{case_dir}/tuning/`。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 从服务化（vLLM）日志的启动阶段，提取 `non-default args:` 行的关键参数，
 按分类生成结构化的 Excel 文件。

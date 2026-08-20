@@ -1,9 +1,14 @@
 ---
 name: github-raw-fetch
+invoke: pipeline-only
 description: 当用户提供 GitHub 文件页面链接，或希望读取某个仓库中的源码、配置、README、Markdown、docs 内容时，使用此技能。技能不仅支持将 `github.com/<owner>/<repo>/blob/<ref>/...` 转换为 `raw.githubusercontent.com` 链接，还要求在读取仓库 docs 前优先读取同仓库同 ref 的 `agent_router.md`，根据其中声明的目录结构或路由规则拼出真实路径，并优先通过 `curl` 获取内容。
 ---
 
 # GitHub Raw Content 与 Docs Router 读取
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由各路径 subagent 以 `invoke=pipeline` 调用（路径 B 的 `serving-profiling-analysis-subagent` 已挂载）。产物写入当前路径约定目录，不写 `{workdir}/skills/`。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 ## 1. 技能目标
 

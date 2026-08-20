@@ -1,9 +1,21 @@
 ---
 name: "ascend-dump-analyzer"
+invoke: standalone
 description: "采集、分析和比对昇腾 NPU 环境信息。当用户需要在 Ascend 服务器上采集环境信息、分析 dump JSON、或比对两个 dump 文件以检测配置漂移时触发。"
 ---
 
 # Ascend 环境分析器
+
+## 独立调用
+
+- 触发：采集 / 分析 / 比对 Ascend 环境 dump JSON，且没有 A/B/C 产品意图
+- 输入：目标机与采集参数，或一份/两份 dump JSON 路径；缺则只问本 skill 参数
+- 输出：dump JSON / 比对报告写入 `{workdir}/skills/ascend-dump-analyzer/`
+- 禁止：写流水线门禁 / 进度文件；禁止声称某 Phase 已完成；禁止读 `deploy-config.md` / `pd-deploy-config.md` 来凑参
+
+## 流水线内调用
+
+`invoke: standalone`。subagent 默认不调用本 skill。
 
 采集、分析和比对昇腾 NPU 环境 dump JSON 文件。本技能包含独立采集脚本（`msprechecker_dump.py`）、比对脚本（`compare_dumps.py`）、分析指南和 HTML 报告模板。
 

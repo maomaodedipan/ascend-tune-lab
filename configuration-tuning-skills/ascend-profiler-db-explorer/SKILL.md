@@ -1,10 +1,15 @@
 ---
 name: ascend-profiler-db-explorer
+invoke: pipeline-only
 description: 面向 Ascend PyTorch Profiler / msprof DB（如 ascend_pytorch_profiler*.db、msprof_*.db）的 SQL 分析技能。将自然语言问题（算子耗时、通信、下发、调度、schema/table 查询）转为安全可执行 SQL，并按需从官方文档提取表结构详情。
 keywords: [db, sqlite, sql, table, schema, ascend-pytorch-profiler-db, ascend_pytorch_profiler, 算子耗时, 通信耗时, 下发分析, 调度分析]
 ---
 
 # Ascend Profiling 数据库查询与 SQL 设计
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。即使「只要查一张表」也禁止快路径。约定见 `configuration-tuning-skills/README.md`。
 
 ## 技能目标
 

@@ -3,7 +3,7 @@
 由 primary 在选定 **路径 A（服务化调优）** 后强制 Read 并严格推进。  
 顶层路由见 [`primary-workflow.md`](primary-workflow.md)。
 
-**范围**：Phase 0 配置门禁 → Phase 1 基线配置生成 → Phase 2 **离线并行策略调优**（入口 skill `serving-parallel-strategy-tuning` + 三子 skill）。
+**范围**：Phase 0 配置门禁 → Phase 1 基线配置生成 → Phase 2 **离线并行策略调优**（入口 skill `serving-parallel-strategy-tuning` + 三子 skill）。进入本路径后禁止改走独立 skill 快路径。
 
 > 用户输入：先定 `workdir`（未指定则 `./workspace`），再在其中放 MD 配置（默认 `deploy-config.md`）。`## 基本参数` 必填，`## 服务化配置` / `## SLO约束` 可选。格式见 [`references/user-config-format.md`](references/user-config-format.md)。
 
@@ -61,7 +61,8 @@
 
 ### 全局约束
 
-- **路径互斥**：本路径内 **禁止**派发 `serving-profiling-analysis-subagent`。
+- **路径互斥**：本路径内 **禁止**派发 `serving-profiling-analysis-subagent`，也禁止插入独立 skill 快路径（含 `vllm-ascend-tuning`）。
+- **Skill 调用**：本路径 skill 均为 `pipeline-only`（`ascend-baseline-generator`、`serving-parallel-strategy-tuning` 及三子 skill；另挂 `vllm-ascend-config-extractor` / `model-feature-extractor`；`serving-cfg-extract` / `serving-perf-metrics` 预留、当前 Phase 2 不执行）。Read `SKILL.md` 时标 `invoke=pipeline`；产物只写 `{case_dir}/baseline|tuning/`。手册式调优 `vllm-ascend-tuning` 是 standalone，**不要**在路径 A 内改跑。约定见 `configuration-tuning-skills/README.md`。
 - **workdir 默认**：未指定则创建并使用 `{cwd}/workspace`。
 - **配置文件硬门禁**：`workdir` 无合法配置文件，或 `## 基本参数` 未填完 → **不得进入 Phase 1**。
 - **模型 config 硬门禁**：Phase 0 必须拿到 `{workdir}/model_config.json`；缺失则 **不得进入 Phase 1**。

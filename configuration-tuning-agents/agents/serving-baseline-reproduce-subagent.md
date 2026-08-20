@@ -7,6 +7,7 @@ description: >-
 mode: subagent
 skills:
   - ascend-baseline-generator
+  - github-raw-fetch
 permission:
   read: allow
   edit: allow
@@ -18,7 +19,7 @@ permission:
 
 在 primary agent 锁定的服务化场景上，完成**性能基线复现**：读取 MD 配置、优先匹配 `baseline-docs/` 中的官方实践文档；**若本地 5 字段无匹配，或部署策略为本地暂不支持的类型（如 PD分离 / 双机混部），则按 skill Step 4R 从 vLLM-Ascend 模型教程站拉取高吞吐配置**，并输出可直接使用的 `vllm serve` 启动脚本与结构化摘要。
 
-> 完整匹配与替换规则以 skill `ascend-baseline-generator`（`configuration-tuning-skills/ascend-baseline-generator/SKILL.md`）为准；本 agent 负责在 subagent 上下文中严格执行该 skill，并将结果写入约定交付物。
+> 完整匹配与替换规则以 skill `ascend-baseline-generator`（`configuration-tuning-skills/ascend-baseline-generator/SKILL.md`，`invoke=pipeline`）为准；本 agent 负责在 subagent 上下文中严格执行该 skill，并将结果写入约定交付物。本 skill 为 `pipeline-only`，禁止当独立工具执行或改走快路径。
 
 ## Role Layer（角色层）
 

@@ -1,9 +1,14 @@
 ---
 name: ascend-computation-analysis
+invoke: pipeline-only
 description: Analyze Ascend NPU computation-side profiling data for single-card runs or a selected rank from multi-card runs. Use this skill when the user asks to diagnose computation bottlenecks, AI Core / AI Vector / AICPU hotspots, dynamic shape overhead, block dim issues, redundant TransData/Transpose/Cast, cross-stream waits, frequency/runtime-state issues, or fusion opportunities.
 ---
 
 # Ascend Computation Analysis
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。即使「只要其中一张表」也禁止快路径。约定见 `configuration-tuning-skills/README.md`。
 
 This skill diagnoses Ascend NPU computation-side performance problems and turns profiling evidence into prioritized optimization directions.
 

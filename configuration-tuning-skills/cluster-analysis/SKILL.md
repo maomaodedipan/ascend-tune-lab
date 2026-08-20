@@ -1,9 +1,22 @@
 ---
 name: "cluster-analysis"
+invoke: standalone
 description: "Ascend cluster performance analysis and comparison tool. Invoke when user asks to analyze cluster profiling data (DB or TEXT format), generate cluster analysis reports, or compare two cluster datasets."
 ---
 
 # Ascend 集群性能分析与比对
+
+## 独立调用
+
+- 触发：用户已有 `cluster_analysis_output` / `cluster.db`，只要集群全景或双集群比对报告，且没有路径 B 的完整 profiling 分析意图
+- 输入：一个或两个集群数据目录；缺则只问本 skill 参数
+- 输出：MD / HTML 写入 `{workdir}/skills/cluster-analysis/`（原始数据旁的 summary 可保留，但不写 `{workdir}/profiling/profiling-report.md`）
+- 禁止：写路径 B 门禁文件；禁止声称 Profiling 分析已完成
+- 有原始 `*_ascend_pt` / `PROF_*` 且要做完整 Profiling 分析 → 走路径 B，不走本 skill
+
+## 流水线内调用
+
+`invoke: standalone`。subagent 默认不调用本 skill。路径 B 的集群快慢卡仍用 `ascend-cluster-fast-slow-rank-detector`。
 
 面向华为昇腾 NPU 集群 profiling 数据的性能分析工具。支持从 `cluster_analysis_output` 目录（DB 或 TEXT 格式）提取数据，生成全景数据总结 MD 文件，并根据用户需求生成**单集群整体分析**或**双集群比对分析** HTML 报告。
 

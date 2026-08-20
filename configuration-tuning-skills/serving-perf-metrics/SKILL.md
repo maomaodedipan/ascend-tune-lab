@@ -1,9 +1,14 @@
 ---
 name: serving-perf-metrics
+invoke: pipeline-only
 description: "从服务化日志运行阶段解析性能指标（权重容量、显存、吞吐、命中率等），自动识别日志格式，按指标为行输出 CSV。"
 ---
 
 # Serving Perf Metrics (服务化运行性能指标) 🦞
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A 对应 subagent 以 `invoke=pipeline` 调用（预留线上日志调优；当前 Phase 2 **不**执行）。产物写 `{case_dir}/tuning/`。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 从大模型服务化（vLLM Serving）日志的**运行测试阶段**中解析性能指标，
 **自动检测日志格式**，按 **指标为行、值为列** 输出 CSV。

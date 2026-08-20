@@ -1,86 +1,57 @@
-\---
-
+---
 name: vllm-ascend-tuning
-
+invoke: standalone
 description: "vLLM-Ascend 性能调优技能。当用户需要对 vLLM-Ascend 推理服务进行性能调优、优化推理速度/吞吐量、调整系统参数以获得最佳性能时触发。涵盖并行策略选择、编译优化、OS 级调优、torch_npu 配置、CANN/HCCL 调优、vLLM 参数调优、Graph Mode 优化、Speculative Decoding、量化调优、PD 分离架构和性能基准测试。不用于部署服务（见 vllm-ascend-server）或事后 Profiling 分析（见 profiling-analysis）。"
-
 keywords:
+  - vllm 调优
+  - vllm 性能优化
+  - ascend 推理优化
+  - 昇腾推理性能
+  - 吞吐量优化
+  - 延迟优化
+  - 并行策略
+  - TP DP EP
+  - tensor parallel
+  - expert parallel
+  - speculative decoding
+  - MTP EAGLE
+  - graph mode
+  - cudagraph
+  - 编译优化
+  - LTO PGO
+  - jemalloc tcmalloc
+  - torch_npu 优化
+  - HCCL 调优
+  - CANN 优化
+  - 量化推理
+  - W4A8 W8A8
+  - PD 分离
+  - 性能基准
+  - 环境变量调优
+  - vllm bench
+  - vllm 基准测试
+  - 性能测试
+  - 吞吐量测试
+  - 延迟测试
+  - TTFT TPOT
+  - AISBench
+---
 
- - vllm 调优
+# vLLM-Ascend 性能调优
 
- - vllm 性能优化
+## 独立调用
 
- - ascend 推理优化
+- 触发：用户只要手册式调优（OS / CANN / HCCL / Graph Mode / 量化 / 环境变量 / speculative decoding 等），**且没有**路径 A/B/C 产品意图
+- 输入：对话里当场给的现象与约束；缺则只问本 skill 参数；**禁止**读或生成 `deploy-config.md` / `pd-deploy-config.md` 来凑参
+- 输出：建议写入 `{workdir}/skills/vllm-ascend-tuning/`
+- 禁止：写 `baseline-summary.md`、`tuning-status.md`、`pd-*-status.md`、`profiling-report.md`；禁止声称某 Phase 已完成
+- **让位流水线**：基线复现 / 并行策略 / `deploy-config` → 路径 A；原始 profiling 数据分析 → 路径 B；最佳 PD 配比实测 → 路径 C
 
- - 昇腾推理性能
+## 流水线内调用
 
- - 吞吐量优化
+`invoke: standalone`。subagent 默认不调用本 skill。路径 A Phase 2 仍用 `serving-parallel-strategy-tuning`。
 
- - 延迟优化
-
- - 并行策略
-
- - TP DP EP
-
- - tensor parallel
-
- - expert parallel
-
- - speculative decoding
-
- - MTP EAGLE
-
- - graph mode
-
- - cudagraph
-
- - 编译优化
-
- - LTO PGO
-
- - jemalloc tcmalloc
-
- - torch_npu 优化
-
- - HCCL 调优
-
- - CANN 优化
-
- - 量化推理
-
- - W4A8 W8A8
-
- - PD 分离
-
- - 性能基准
-
- - 环境变量调优
-
- - vllm bench
-
- - vllm 基准测试
-
- - 性能测试
-
- - 吞吐量测试
-
- - 延迟测试
-
- - TTFT TPOT
-
- - AISBench
-
-\---
-
-
-
-\# vLLM-Ascend 性能调优
-
-
-
-\## 概述
-
-
+## 概述
 
 本技能提供 vLLM-Ascend 系统级性能调优的完整工作流，涵盖从并行策略、编译、OS、框架到模型推理的全链路优化。
 

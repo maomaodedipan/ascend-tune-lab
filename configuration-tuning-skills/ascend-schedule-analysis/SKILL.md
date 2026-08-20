@@ -1,9 +1,14 @@
 ---
 name: ascend-schedule-analysis
+invoke: pipeline-only
 description: Analyze Ascend NPU schedule, operator dispatch, operator launch, and Host Bound profiling issues in Ascend profiling data. Use when need to diagnose device Free time, framework/operator dispatch latency, launch latency, PYTORCH_API/CANN_API launch gaps, aclrtSynchronizeStream stalls, task queue behavior, CPU scheduling interference, GC/lock pauses, CPU affinity, or schedule-side optimization actions.
 ---
 
 # Ascend Schedule Analysis
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。即使「只要其中一张表」也禁止快路径。约定见 `configuration-tuning-skills/README.md`。
 
 Analyze NPU scheduling issues from evidence first. Do not start with tuning suggestions. Establish whether the workload is actually Host Bound, then separate model-side dispatch pressure from CPU runtime scheduling interference and environment/configuration issues.
 

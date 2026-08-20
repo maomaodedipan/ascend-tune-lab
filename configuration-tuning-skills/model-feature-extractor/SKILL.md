@@ -1,9 +1,14 @@
 ---
 name: "model-feature-extractor"
+invoke: pipeline-only
 description: "Reads model feature support table (xlsx) and converts to compact JSON. Invoke when user needs to parse or convert model-feature xlsx to JSON, or query model feature support across versions."
 ---
 
 # Model Feature Extractor
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A 对应 subagent 以 `invoke=pipeline` 调用。产物写 `{case_dir}/tuning/`（可同时保留 skill 目录 `output/` 副本）。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 This skill reads a model feature support table (`.xlsx`) and converts it into compact JSON files for agent consumption. Each model is stored in a separate JSON file, with shared definitions in `common.json`.
 

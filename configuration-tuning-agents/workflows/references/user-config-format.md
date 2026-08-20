@@ -1,6 +1,6 @@
 # 用户配置文件格式
 
-流水线 **必须** 以工作目录中的一份 MD 配置文件作为唯一场景输入（`config_md_path`）。Primary 在 Phase 0 定位/生成/校验该文件；**配置文件填写完成前不得进入 Phase 1**。
+路径 A 流水线 **必须** 以工作目录中的一份 MD 配置文件作为唯一场景输入（`config_md_path`）。独立 skill 快路径 **不** 使用本格式。Primary 在 Phase 0 定位/生成/校验该文件；**配置文件填写完成前不得进入 Phase 1**。
 
 参考示例：[`configuration-tuning-skills/ascend-baseline-generator/config.example.md`](../../configuration-tuning-skills/ascend-baseline-generator/config.example.md)
 

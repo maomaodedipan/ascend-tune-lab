@@ -1,5 +1,6 @@
 ---
 name: serving-kv-cache-capacity
+invoke: pipeline-only
 description: >-
   Estimates available KV cache capacity and memory-bound max concurrency for
   each DP×TP×EP parallel combination under vLLM-Ascend. Use after
@@ -7,6 +8,10 @@ description: >-
 ---
 
 # serving-kv-cache-capacity
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A Phase 2 入口 skill / `serving-tuning-subagent` 以 `invoke=pipeline` 调用。产物写 `{case_dir}/tuning/`。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 对 `parallel-strategies.json` 中每个并行组合，估算可用 KV Cache 容量与内存上限下的最大并发。
 

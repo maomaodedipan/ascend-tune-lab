@@ -1,6 +1,6 @@
 # 路径 C · PD 配比用户配置格式
 
-Primary / `pd-config-env-check` 读取 `{workdir}/pd-deploy-config.md`（或用户指定路径）。模板见 [`../templates/pd-deploy-config.template.md`](../templates/pd-deploy-config.template.md)。  
+Primary / `pd-config-env-check` 读取 `{workdir}/pd-deploy-config.md`（或用户指定路径）。独立 skill 快路径 **不** 使用本格式。模板见 [`../templates/pd-deploy-config.template.md`](../templates/pd-deploy-config.template.md)。  
 
 KV / 公式细则：`configuration-tuning-skills/pd-config-env-check/references/kv-connector-and-params.md`。  
 官方拉起回退：`configuration-tuning-skills/pd-config-env-check/references/official-model-launch.md`（[模型教程](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/)）。

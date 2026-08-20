@@ -1,5 +1,6 @@
 ---
 name: find-possible-parallel-strategy
+invoke: pipeline-only
 description: >-
   Enumerates legal DP×TP×EP parallel combinations for vLLM-Ascend single-node
   mixed deployment from model weight size and NPU count. Use when computing
@@ -8,6 +9,10 @@ description: >-
 ---
 
 # find-possible-parallel-strategy
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A Phase 2 入口 skill / `serving-tuning-subagent` 以 `invoke=pipeline` 调用。产物写 `{case_dir}/tuning/`。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 单机混部场景下，根据模型参数量与量化类型估算权重大小，计算最小 TP，并枚举合法 `DP×TP×EP` 组合。
 

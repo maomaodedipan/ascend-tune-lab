@@ -10,6 +10,10 @@ skills:
   - find-possible-parallel-strategy
   - serving-kv-cache-capacity
   - serving-slo-concurrency
+  - serving-cfg-extract
+  - serving-perf-metrics
+  - vllm-ascend-config-extractor
+  - model-feature-extractor
 permission:
   read: allow
   edit: allow
@@ -29,7 +33,7 @@ Phase 2 的 **并行策略调优编排者**：校验 baseline、收集 SLO、调
 ### 负责
 
 1. Read `{case_dir}/baseline/baseline-summary.md`（至少 §1–§5）并校验最小集。
-2. Read `configuration-tuning-skills/serving-parallel-strategy-tuning/SKILL.md`。
+2. Read `configuration-tuning-skills/serving-parallel-strategy-tuning/SKILL.md`（`invoke=pipeline`；本入口及三子 skill 均为 `pipeline-only`）。
 3. **SLO 约束**：
    - 用 `resolve_slo_constraints.py --config {config_md_path} --no-defaults` 探测；
    - 若 `## SLO约束` 缺失或字段为空 → **向用户询问** TTFT / TPOT / 其他约束；
@@ -44,7 +48,8 @@ Phase 2 的 **并行策略调优编排者**：校验 baseline、收集 SLO、调
 
 - 执行 `baseline-launch.sh` 或任何服务部署 / 压测。
 - 修改 `baseline-launch.sh` / `baseline-summary.md`。
-- 调用 `serving-cfg-extract`、`serving-perf-metrics` 做线上日志调优（本阶段不做）。
+- 调用 `serving-cfg-extract`、`serving-perf-metrics` 做线上日志调优（本阶段不做；二者为 `pipeline-only`，将来接入须 `invoke=pipeline`）。
+- 把本路径 `pipeline-only` skill 改走 Primary 快路径。
 
 ## Task Layer（任务层）
 

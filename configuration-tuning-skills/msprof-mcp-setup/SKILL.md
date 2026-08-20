@@ -1,9 +1,14 @@
 ---
 name: msprof-mcp-setup
+invoke: pipeline-only
 description: 当用户需要在 opencode / Cursor / Claude Code 等工具中接入 msprof-mcp（MindStudio Profiler 的 MCP server，用于分析 Ascend profiling 数据）时使用此技能。涵盖 Linux / macOS / WSL 与 Windows 原生两种安装路径，以及各 IDE 的 MCP 配置写入方式。重点解决 Windows 上 pandas 3.x C 扩展加载失败、opencode 桌面版无 CLI、opencode 配置格式仅认 mcp.<name> 等已知坑。
 ---
 
 # msprof-mcp 安装与 MCP 接入
+
+## 调用约定
+
+`invoke: pipeline-only`。仅路径 B：Primary Step 0 硬门禁或 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物 / 日志写 `{workdir}/profiling/`。禁止「只装 MCP」快路径；未 ready 时停止分析主流程，只说 MCP 安装结果并等 Reload。约定见 `configuration-tuning-skills/README.md`。
 
 ## 1. 技能目标
 

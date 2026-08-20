@@ -1,9 +1,14 @@
 ---
 name: "compare-analyzer"
-description: "Parses msprof-analyze compare output xlsx, extracts key insights per sheet, generates HTML report and Chinese xlsx. Invoke when user has a compare result xlsx and wants analysis report or Chinese translation."
+invoke: pipeline-only
+description: "Parses msprof-analyze compare output xlsx, extracts key insights per sheet, generates HTML report and Chinese xlsx. Pipeline-only for Path B after ascend-msprof-analyze-cli; do not invoke as a standalone tool."
 ---
 
 # Compare Analyzer
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用（在 `ascend-msprof-analyze-cli` 产出 compare xlsx 之后）。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 ## 功能概述
 

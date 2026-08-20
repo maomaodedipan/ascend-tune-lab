@@ -16,7 +16,7 @@ permission:
 
 # Serving PD Config Check Subagent（路径 C · Phase 1）
 
-执行 **PD 分离配置与环境检查**。Skill SOP 以 `configuration-tuning-skills/pd-config-env-check/SKILL.md` 为准。
+执行 **PD 分离配置与环境检查**。Skill SOP 以 `configuration-tuning-skills/pd-config-env-check/SKILL.md` 为准（`invoke=pipeline`，`pipeline-only`，禁止快路径）。
 
 ## Role Layer（角色层）
 

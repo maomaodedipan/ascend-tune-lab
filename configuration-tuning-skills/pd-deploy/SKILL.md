@@ -1,5 +1,6 @@
 ---
 name: pd-deploy
+invoke: pipeline-only
 description: >-
   Deploy Mooncake master then Prefill/Decode/Proxy from Path C rendered scripts.
   Use after pd-config-env-check and aisbench-install. On failure diagnose and
@@ -7,6 +8,10 @@ description: >-
 ---
 
 # pd-deploy
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 C Phase 3 的 `serving-pd-deploy-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/pd-ratio/deploy/`。禁止独立部署。约定见 `configuration-tuning-skills/README.md`。
 
 路径 C · Phase 3。严格使用 `{workdir}/pd-ratio/check/rendered/` 启动服务。
 

@@ -1,10 +1,15 @@
 ---
 name: ascend-profiler-data-validation
+invoke: pipeline-only
 description: 当用户提供 MindStudio profiler 采集的性能数据（框架 profiler、msprof 命令行）时，对数据完整性、采集状态及关键配置进行校验，确保后续分析工具能正常运行。
 keywords: [profiler, 性能分析, 数据检查]
 ---
 
 # MindStudio Profiler 数据校验
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。即使「只要校验」也禁止快路径，避免绕过 MCP 门禁。约定见 `configuration-tuning-skills/README.md`。
 
 ## 技能目标
 

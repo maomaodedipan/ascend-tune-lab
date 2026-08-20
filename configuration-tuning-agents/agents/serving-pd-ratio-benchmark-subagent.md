@@ -17,7 +17,7 @@ permission:
 
 # Serving PD Ratio Benchmark Subagent（路径 C · Phase 4）
 
-执行 **AISBench 压测、最佳 PD 配比计算、资源可达判定与验证实测**。Skill SOP 以 `configuration-tuning-skills/pd-ratio-benchmark/SKILL.md` 为准。
+执行 **AISBench 压测、最佳 PD 配比计算、资源可达判定与验证实测**。Skill SOP 以 `configuration-tuning-skills/pd-ratio-benchmark/SKILL.md` 为准（`invoke=pipeline`，`pipeline-only`，禁止快路径 / 独立压测）。
 
 ## Role Layer（角色层）
 

@@ -1,9 +1,14 @@
 ---
 name: ascend-msprof-analyze-cli
+invoke: pipeline-only
 description: MindStudio Profiler Analyze（msprof-analyze）是面向 AI 训练与推理场景的性能分析工具，基于采集得到的 profiling 数据进行统计、比对和诊断，帮助定位计算、通信、调度及集群场景下的性能瓶颈。
 ---
 
 # Ascend 性能数据综合分析
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 目前提供两个功能，根据用户需求自动选择对应工具：
 

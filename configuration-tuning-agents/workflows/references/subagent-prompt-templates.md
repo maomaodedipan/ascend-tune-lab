@@ -2,11 +2,15 @@
 
 Primary agent 使用 Task 工具派发时，将 `{占位符}` 替换为实际值。`subagent_type` 必须与 `agents/*.md` frontmatter 中的 `name` 一致。
 
-顶层路由：`workflows/primary-workflow.md`（路径 A 服务化调优 / 路径 B Profiling / 路径 C 最佳 PD 配比，平级互斥）。
+顶层路由：`workflows/primary-workflow.md`（快路径 / 路径 A 服务化调优 / 路径 B Profiling / 路径 C 最佳 PD 配比，互斥）。Skill 分类见 `configuration-tuning-skills/README.md`。
+
+**快路径**：不派发 subagent；本文件模板不适用。
 
 **路径 A 前置**：Phase 0 已确定 `workdir` 并校验 `config_md_path`（见 `references/user-config-format.md`）。  
 **路径 B**：不要求 deploy-config；见下方「Profiling 分析」。路径 A 模板中 **禁止**派发 profiling / PD 配比 subagent。  
 **路径 C**：见下方「路径 C · 最佳 PD 配比」；使用 `pd-deploy-config.md`，**禁止**混跑 A/B。
+
+各模板中 Read `SKILL.md` 时一律标 **`invoke=pipeline`**。`pipeline-only` 禁止当独立工具执行。`dual` skill（如 `op-mfu-calculator`）在流水线内产物写该路径约定目录，禁止写 `{workdir}/skills/`。
 
 ---
 
@@ -34,16 +38,18 @@ scene: profiling-analysis
 【步骤 0 · 首次安装硬门禁】
 - GetMcpTools 检查 msprof-mcp / user-msprof-mcp 是否 ready
 - 若未安装/未连接：
-  1. Read configuration-tuning-skills/msprof-mcp-setup/SKILL.md
+  1. Read configuration-tuning-skills/msprof-mcp-setup/SKILL.md（invoke=pipeline）
   2. 按技能安装（Linux/WSL：scripts/bootstrap-msprof-mcp.sh；Windows：pip）
   3. 提示用户 Reload Window / 重启 IDE
   4. **停止分析主流程**，回报 setup 状态；不得假装已完成 profiling
 - 仅当 MCP ready 后继续下列步骤
 
 【MCP ready 后】
-- 按场景 Read skill：configuration-tuning-skills/<skill>/SKILL.md
+- 按场景 Read skill：configuration-tuning-skills/<skill>/SKILL.md（invoke=pipeline）
   （data-validation / db-explorer / computation / communication / schedule /
-   msprof-analyze-cli / cluster-fast-slow-rank / op-mfu / github-raw-fetch）
+   msprof-analyze-cli / compare-analyzer / cluster-fast-slow-rank 为 pipeline-only；
+   msprof-mcp-setup / github-raw-fetch 为 pipeline-only；
+   op-mfu 为 dual，此处仍 invoke=pipeline）
 - 优先 CallMcpTool；server 名以 GetMcpTools 为准
 - 单次工具失败才可局部退化为文件读取，并说明原因
 
@@ -96,7 +102,7 @@ scene: baseline-reproduce
 执行 Phase 1 · 基线配置生成。
 
 【强制】
-- Read skill：configuration-tuning-skills/ascend-baseline-generator/SKILL.md
+- Read skill：configuration-tuning-skills/ascend-baseline-generator/SKILL.md（invoke=pipeline）
 - Read 角色定义：agents/serving-baseline-reproduce-subagent.md
 - Read 配置格式：workflows/references/user-config-format.md
 
@@ -144,7 +150,7 @@ scene: serving-parallel-strategy-tuning
 
 【强制】
 - Read 角色定义：agents/serving-tuning-subagent.md
-- Read 入口 skill：configuration-tuning-skills/serving-parallel-strategy-tuning/SKILL.md
+- Read 入口 skill：configuration-tuning-skills/serving-parallel-strategy-tuning/SKILL.md（invoke=pipeline）
 - Read **唯一** Phase 2 模板：workflows/templates/tuning-process-template.md
   （同时定义中间产物 tuning-process.* 与汇总 tuning-status.md）
 
@@ -208,7 +214,7 @@ scene: pd-config-env-check
 
 【强制】
 - Read 角色定义：agents/serving-pd-config-check-subagent.md
-- Read skill：configuration-tuning-skills/pd-config-env-check/SKILL.md
+- Read skill：configuration-tuning-skills/pd-config-env-check/SKILL.md（invoke=pipeline）
 - Read 模板：workflows/templates/pd-check-report-template.md
 - Read 配置格式：workflows/references/pd-user-config-format.md
 - **一机一容器**：container_name 未填或不存在 → Agent 按 A2/A3 官方分 tab 模板 docker run（见 GLM5 文档 / ensure_host_container.sh）；同 host 共用；禁止同机 P/D 各建一容器
@@ -254,7 +260,7 @@ scene: aisbench-install
 
 【强制】
 - Read 角色定义：agents/serving-aisbench-install-subagent.md
-- Read skill：configuration-tuning-skills/aisbench-install/SKILL.md
+- Read skill：configuration-tuning-skills/aisbench-install/SKILL.md（invoke=pipeline）
 - Read 模板：workflows/templates/aisbench-install-report-template.md
 - 验收 Phase 1 pd-check-status.md=passed
 - 安装目标来自 pd-deploy-config / Phase 1（优先 Prefill 容器）；不依赖 deploy 报告
@@ -291,7 +297,7 @@ scene: pd-deploy
 
 【强制】
 - Read 角色定义：agents/serving-pd-deploy-subagent.md
-- Read skill：configuration-tuning-skills/pd-deploy/SKILL.md
+- Read skill：configuration-tuning-skills/pd-deploy/SKILL.md（invoke=pipeline）
 - Read 模板：workflows/templates/pd-deploy-report-template.md
 - 验收 {workdir}/pd-ratio/check/pd-check-status.md 必须为 passed
 - 验收 {workdir}/pd-ratio/aisbench/aisbench-install-status.md 必须为 passed|skipped
@@ -332,7 +338,7 @@ scene: pd-ratio-benchmark
 
 【强制】
 - Read 角色定义：agents/serving-pd-ratio-benchmark-subagent.md
-- Read skill：configuration-tuning-skills/pd-ratio-benchmark/SKILL.md
+- Read skill：configuration-tuning-skills/pd-ratio-benchmark/SKILL.md（invoke=pipeline）
 - Read 模板：workflows/templates/pd-ratio-report-template.md
 - 验收 Phase 2 aisbench passed|skipped；Phase 3 deploy passed
 - AISBench 配置必须含 summarizer；定长用 Synthetic；VLLMCustomAPIChat + stream=True 打 proxy

@@ -3,7 +3,7 @@
 由 primary 在选定 **路径 B（Profiling 分析）** 后强制 Read 并推进。  
 顶层路由见 [`primary-workflow.md`](primary-workflow.md)。对齐 msagent Profiler。
 
-**与路径 A 平级、互斥**：不进入服务化 Phase 0–2，不要求 `deploy-config.md`。
+**与路径 A 平级、互斥**：不进入服务化 Phase 0–2，不要求 `deploy-config.md`。进入本路径后禁止改走独立 skill 快路径（分析套件保持 `pipeline-only`；dual skill 一律 `invoke=pipeline`）。
 
 ## 触发（进入本路径前已由 primary 确认）
 
@@ -75,7 +75,8 @@
 
 ## 全局约束
 
-- **路径互斥**：本路径内 **禁止**执行服务化 Phase 0–2 / deploy-config / baseline / tuning。
+- **路径互斥**：本路径内 **禁止**执行服务化 Phase 0–2 / deploy-config / baseline / tuning，也禁止把分析套件改走快路径。
+- **Skill 调用**：分析套件与 `msprof-mcp-setup` / `github-raw-fetch` / `compare-analyzer` 均为 `pipeline-only`；`op-mfu-calculator` 为 `dual`，本路径内一律 `invoke=pipeline`，产物写 `{workdir}/profiling/`（或 `output_dir`），禁止写 `{workdir}/skills/`。约定见 `configuration-tuning-skills/README.md`。
 - **报告落盘**：只写 `workdir`（默认 `{workdir}/profiling/`）。
 - **无路径不派发**：`profiler_path` 无效或缺失 → 中断并请用户确认。
 
@@ -98,8 +99,11 @@ P3. 验收 profiling-report.md，路径 B 结束
 
 ## Skill 套件
 
-- `msprof-mcp-setup`（**首次硬门禁**）
-- `ascend-profiler-data-validation` / `ascend-profiler-db-explorer`
-- `ascend-computation-analysis` / `ascend-communication-analysis` / `ascend-schedule-analysis`
-- `ascend-msprof-analyze-cli` / `ascend-cluster-fast-slow-rank-detector`
-- `op-mfu-calculator` / `github-raw-fetch`
+- `msprof-mcp-setup`（**pipeline-only** · 首次硬门禁 · 本路径 `invoke=pipeline`）
+- `ascend-profiler-data-validation` / `ascend-profiler-db-explorer`（**pipeline-only**）
+- `ascend-computation-analysis` / `ascend-communication-analysis` / `ascend-schedule-analysis`（**pipeline-only**）
+- `ascend-msprof-analyze-cli` / `compare-analyzer` / `ascend-cluster-fast-slow-rank-detector`（**pipeline-only**）
+- `op-mfu-calculator`（**dual** · 本路径 `invoke=pipeline`）
+- `github-raw-fetch`（**pipeline-only** · 本路径 `invoke=pipeline`）
+
+`compare-analyzer` 在 `ascend-msprof-analyze-cli` 产出 `performance_comparison_result_*.xlsx` 之后以 `invoke=pipeline` 调用，产物写 `{workdir}/profiling/`。已导出的 `cluster_analysis_output` 仍用快路径 `cluster-analysis`，**不要**在本路径内改走该 standalone skill。

@@ -1,5 +1,6 @@
 ---
 name: aisbench-install
+invoke: pipeline-only
 description: >-
   Probe or install AISBench from source inside a target container for Path C
   PD-ratio benchmarking. Runs after pd-config-env-check and before pd-deploy.
@@ -7,6 +8,10 @@ description: >-
 ---
 
 # aisbench-install
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 C Phase 2 的 `serving-aisbench-install-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/pd-ratio/aisbench/`。即使「只装 AISBench」也禁止快路径。约定见 `configuration-tuning-skills/README.md`。
 
 路径 C · Phase 2（**部署前**）。在目标容器内探测或源码安装 [AISBench](https://github.com/AISBench/benchmark)，确保后续部署完成后可立刻压测。
 

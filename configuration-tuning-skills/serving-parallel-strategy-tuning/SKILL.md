@@ -1,5 +1,6 @@
 ---
 name: serving-parallel-strategy-tuning
+invoke: pipeline-only
 description: >-
   Orchestrates vLLM-Ascend single-node parallel strategy tuning from baseline
   config: resolve SLO constraints, clone vllm-ascend/msmodeling, then run
@@ -8,6 +9,10 @@ description: >-
 ---
 
 # serving-parallel-strategy-tuning
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A Phase 2 的 `serving-tuning-subagent` 以 `invoke=pipeline` 调用。产物写 `{case_dir}/tuning/`。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 并行策略调优 **入口 skill**。以 Phase 1 `baseline-summary.md` + 工作目录 `deploy-config.md` 为起点，串联三个子 skill，产出推荐 DP/TP/EP 与 SLO 可行并发。
 

@@ -1,5 +1,6 @@
 ---
 name: serving-slo-concurrency
+invoke: pipeline-only
 description: >-
   Estimates max concurrency under TTFT/TPOT SLO for arbitrary vLLM-Ascend models
   (Qwen any size, GLM, DeepSeek, MiniMax, …) by analyzing vllm-ascend attention
@@ -8,6 +9,10 @@ description: >-
 ---
 
 # serving-slo-concurrency
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A Phase 2 入口 skill / `serving-tuning-subagent` 以 `invoke=pipeline` 调用。产物写 `{case_dir}/tuning/`。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 在 KV 内存上限内，按 SLO（TTFT / TPOT）估算各并行策略的最大实际并发。
 

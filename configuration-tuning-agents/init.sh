@@ -28,7 +28,8 @@ BRAND="ascend-tune-lab"
 TEAM="configuration-tuning-agents"
 VERSION="0.1.0"
 
-INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency msprof-mcp-setup ascend-profiler-db-explorer ascend-profiler-data-validation ascend-computation-analysis ascend-communication-analysis ascend-schedule-analysis ascend-msprof-analyze-cli ascend-cluster-fast-slow-rank-detector op-mfu-calculator github-raw-fetch pd-config-env-check pd-deploy aisbench-install pd-ratio-benchmark"
+INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency msprof-mcp-setup ascend-profiler-db-explorer ascend-profiler-data-validation ascend-computation-analysis ascend-communication-analysis ascend-schedule-analysis ascend-msprof-analyze-cli ascend-cluster-fast-slow-rank-detector op-mfu-calculator github-raw-fetch pd-config-env-check pd-deploy aisbench-install pd-ratio-benchmark compare-analyzer ascend-dump-analyzer cluster-analysis vllm-ascend-tuning"
+# 上表为安装挂载全集。能否快路径以 configuration-tuning-skills/README.md 的 invoke 分类为准（Primary 只声明 standalone+dual）。
 INCLUDED_AGENT_PATTERN="serving-*"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -51,7 +52,7 @@ Arguments:
 安装内容:
   - AGENTS.md（primary: serving-perf-optimization）
   - agents/*.md（subagent 符号链接）
-  - skills/*（configuration-tuning-skills 符号链接）
+  - skills/*（configuration-tuning-skills 符号链接；调用分类见 configuration-tuning-skills/README.md）
   - workflows/（工作流、模板、派发脚本 — 符号链接）
   - configuration-tuning-skills/、configuration-tuning-agents/（仓库路径符号链接，便于 skill 内绝对路径）
 
@@ -318,5 +319,5 @@ echo ""
 echo -e "  ${BOLD}Quick start:${NC}"
 echo -e "  ${CYAN}1.${NC} 在目标项目打开 Agent（$TOOL）"
 echo -e "  ${CYAN}2.${NC} 启动 Agent；未指定工作目录时使用 ${DIM}./workspace${NC}；若无 ${DIM}deploy-config.md${NC}，将自动生成模板，填完 ${DIM}## 基本参数${NC} 后重新发起"
-echo -e "  ${CYAN}3.${NC} Primary 将 Read：${DIM}workflows/primary-workflow.md${NC}（再进入服务化调优 / Profiling / PD 配比等平级路径）"
+echo -e "  ${CYAN}3.${NC} Primary 将 Read：${DIM}workflows/primary-workflow.md${NC}（先判定独立 skill 快路径，再进入服务化调优 / Profiling / PD 配比）"
 echo ""

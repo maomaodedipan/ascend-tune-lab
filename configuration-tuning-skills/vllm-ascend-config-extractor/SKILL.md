@@ -1,9 +1,14 @@
 ---
 name: "vllm-ascend-config-extractor"
+invoke: pipeline-only
 description: "Extract and compare configuration switches between vLLM and vLLM-Ascend repos. Invoke when user needs to audit, compare, or document config options across vLLM and vLLM-Ascend."
 ---
 
 # vLLM & vLLM-Ascend Configuration Switch Extractor
+
+## 调用约定
+
+`invoke: pipeline-only`。仅由路径 A 对应 subagent 以 `invoke=pipeline` 调用。产物写 `{case_dir}/tuning/`（可同时保留 skill 目录 `output/` 副本）。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
 This skill extracts detailed configuration information from the vLLM upstream repository and the vLLM-Ascend plugin repository. It takes a predefined list of target configurations (`extraction_targets.json`) as input, and for each listed config item, enriches it with information traced from documentation and source code, producing two structured JSON output files.
 
