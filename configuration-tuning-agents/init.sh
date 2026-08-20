@@ -28,7 +28,7 @@ BRAND="ascend-tune-lab"
 TEAM="configuration-tuning-agents"
 VERSION="0.1.0"
 
-INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency msprof-mcp-setup ascend-profiler-db-explorer ascend-profiler-data-validation ascend-computation-analysis ascend-communication-analysis ascend-schedule-analysis ascend-msprof-analyze-cli ascend-cluster-fast-slow-rank-detector op-mfu-calculator github-raw-fetch"
+INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency msprof-mcp-setup ascend-profiler-db-explorer ascend-profiler-data-validation ascend-computation-analysis ascend-communication-analysis ascend-schedule-analysis ascend-msprof-analyze-cli ascend-cluster-fast-slow-rank-detector op-mfu-calculator github-raw-fetch pd-config-env-check pd-deploy aisbench-install pd-ratio-benchmark"
 INCLUDED_AGENT_PATTERN="serving-*"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -299,9 +299,10 @@ write_manifest
 
 health_ok=true
 [ -L "$CONFIG_ROOT/workflows" ] || [ -d "$CONFIG_ROOT/workflows" ] || { err "workflows mount missing under $CONFIG_ROOT"; health_ok=false; }
-[ -f "$CONFIG_ROOT/workflows/primary-workflow.md" ] || { err "workflow entry missing"; health_ok=false; }
-[ -f "$CONFIG_ROOT/workflows/serving-tuning-workflow.md" ] || { err "serving-tuning workflow missing"; health_ok=false; }
-[ -f "$CONFIG_ROOT/workflows/profiling-analysis-workflow.md" ] || { err "profiling-analysis workflow missing"; health_ok=false; }
+  [ -f "$CONFIG_ROOT/workflows/primary-workflow.md" ] || { err "workflow entry missing"; health_ok=false; }
+  [ -f "$CONFIG_ROOT/workflows/serving-tuning-workflow.md" ] || { err "serving-tuning workflow missing"; health_ok=false; }
+  [ -f "$CONFIG_ROOT/workflows/profiling-analysis-workflow.md" ] || { err "profiling-analysis workflow missing"; health_ok=false; }
+  [ -f "$CONFIG_ROOT/workflows/pd-ratio-workflow.md" ] || { err "pd-ratio workflow missing"; health_ok=false; }
 [ -d "$TUNE_DIR/skills" ] || { err "skills dir missing"; health_ok=false; }
 [ -d "$CONFIG_ROOT/agents" ] || { err "agents dir missing"; health_ok=false; }
 
@@ -317,5 +318,5 @@ echo ""
 echo -e "  ${BOLD}Quick start:${NC}"
 echo -e "  ${CYAN}1.${NC} 在目标项目打开 Agent（$TOOL）"
 echo -e "  ${CYAN}2.${NC} 启动 Agent；未指定工作目录时使用 ${DIM}./workspace${NC}；若无 ${DIM}deploy-config.md${NC}，将自动生成模板，填完 ${DIM}## 基本参数${NC} 后重新发起"
-echo -e "  ${CYAN}3.${NC} Primary 将 Read：${DIM}workflows/primary-workflow.md${NC}（再进入服务化调优 / Profiling 等平级路径）"
+echo -e "  ${CYAN}3.${NC} Primary 将 Read：${DIM}workflows/primary-workflow.md${NC}（再进入服务化调优 / Profiling / PD 配比等平级路径）"
 echo ""

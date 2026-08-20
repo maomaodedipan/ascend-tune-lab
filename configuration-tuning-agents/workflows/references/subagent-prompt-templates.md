@@ -2,10 +2,11 @@
 
 Primary agent 使用 Task 工具派发时，将 `{占位符}` 替换为实际值。`subagent_type` 必须与 `agents/*.md` frontmatter 中的 `name` 一致。
 
-顶层路由：`workflows/primary-workflow.md`（路径 A 服务化调优 / 路径 B Profiling，平级互斥）。
+顶层路由：`workflows/primary-workflow.md`（路径 A 服务化调优 / 路径 B Profiling / 路径 C 最佳 PD 配比，平级互斥）。
 
 **路径 A 前置**：Phase 0 已确定 `workdir` 并校验 `config_md_path`（见 `references/user-config-format.md`）。  
-**路径 B**：不要求 deploy-config；见下方「Profiling 分析」。路径 A 模板中 **禁止**派发 profiling subagent。
+**路径 B**：不要求 deploy-config；见下方「Profiling 分析」。路径 A 模板中 **禁止**派发 profiling / PD 配比 subagent。  
+**路径 C**：见下方「路径 C · 最佳 PD 配比」；使用 `pd-deploy-config.md`，**禁止**混跑 A/B。
 
 ---
 
@@ -173,6 +174,208 @@ scene: serving-parallel-strategy-tuning
 - 推荐 DP/TP/EP、max_concurrency_slo、perf_db_source、used_real_csv
 - 若 used_real_csv=false：必须附上 perf_db_fallback_reasons（为何未用真实 CSV）
 - 摘要：并行组合数、各组合 max_concurrency_memory / max_concurrency_slo
+  "
+}
+```
+
+---
+
+## 路径 C · 最佳 PD 配比
+
+**仅当**用户明确要做最佳 PD 配比 / PD 配比 / Prefill-Decode 配比 / PD ratio。  
+详文见 `workflows/pd-ratio-workflow.md`。Primary 逐步派发，**验收上一 Phase status 后再派下一 Phase**。
+
+### Phase 0 — PD 配置（Primary，非 subagent）
+
+1. 确定 `workdir`（默认 `./workspace`）。
+2. `config_md_path` 默认 `{workdir}/pd-deploy-config.md`。
+3. 不存在 → 写入 `workflows/templates/pd-deploy-config.template.md` 并停止。
+4. 存在 → 按 `references/pd-user-config-format.md` 校验模型/设备/序列长度等；缺失则停止。
+5. **询问用户 TTFT / TPOT 限制**；未提供则写入默认：TTFT=不限、TPOT=50ms（`progress.md` 注明）。
+6. 通过 → 进入 Phase 1。
+
+### Phase 1 — PD 配置/环境检查
+
+```
+Task 调用参数：
+{
+  "description": "PD配置环境检查",
+  "subagent_type": "serving-pd-config-check-subagent",
+  "prompt": "
+scene: pd-config-env-check
+
+执行路径 C · Phase 1 · PD 配置与环境检查。
+
+【强制】
+- Read 角色定义：agents/serving-pd-config-check-subagent.md
+- Read skill：configuration-tuning-skills/pd-config-env-check/SKILL.md
+- Read 模板：workflows/templates/pd-check-report-template.md
+- Read 配置格式：workflows/references/pd-user-config-format.md
+- **一机一容器**：container_name 未填或不存在 → Agent 按 A2/A3 官方分 tab 模板 docker run（见 GLM5 文档 / ensure_host_container.sh）；同 host 共用；禁止同机 P/D 各建一容器
+- **宿主机只允许 docker***（inspect/run/start/exec/cp/logs/pull）；禁止宿主机 npu-smi/装包/改系统；业务一律 docker exec 进容器
+- A2：优先 `v0.23.0rc1`→`v0.22.1rc1` + davinci0-7；A3：优先 `v0.23.0rc1-a3`→`v0.22.1rc1-a3` + davinci0-15；可用 docker_image 固定；**多机必须同一 IMAGE**（先解析一次再对各机 --image）；--name 必须按环境改
+- docker run 必须 `--privileged --security-opt label=disable`（否则 CANN realpath EPERM → SpaceRegistry/ZerosLike 361001）
+- 禁止改非网络/非允许 KV 字段；禁止进路径 A/B；禁止安装 Mooncake
+- 流程：拉起命令缺失则查官方模型教程回填 → ensure 容器 → compute_pd_params → validate_pd_config → render_pd_launch
+- Read references/official-model-launch.md；优先教程 PD 分离章 + 匹配 A2/A3；无匹配模型则 failed，禁止编造
+- Mooncake 校验须交互等价壳（bash -ic / source ~/.bashrc）；禁止因非交互缺库改 LD_LIBRARY_PATH
+- 同机共置 1P1D：勿用 npu_per_node/tp；保留用户 dp_size、端口、127.0.0.1/lo
+- **最小 P/D 实例 size = 拉起命令 DP×TP**；角色 npu_count 须对齐
+- **QPS 基线禁止占满整机**：只分配 1 个最小 P + 1 个最小 D；npu_ids 空则用 pd-params 的 suggested_*_npu_ids；剩余卡空闲。禁止把官方「整机 DP」或半机硬拆写进基线
+- 官方回填：kv_role/connector 可取 PD 分离章；**TP/DP 与 VISIBLE_DEVICES 取单实例命令**（如 Qwen3.6 §5.1 TP=2 DP=1），禁止把 §5.2 满机 DP 缩放到本机当实例 size
+- 用户已验证 / 官方回填命令跑不起来 → 停止并等用户确认；禁止擅自去掉 MTP、加 spawn、改 LD_LIBRARY_PATH 或其它业务参数试错
+
+【输入】
+- workdir: {workdir}
+- config_md_path: {config_md_path}
+
+【输出】
+- {workdir}/pd-ratio/check/pd-check-report.md
+- {workdir}/pd-ratio/check/pd-check-status.md
+- {workdir}/pd-ratio/check/rendered/
+
+【完成回报】
+status、报告路径、阻塞项摘要、rendered 目录。
+  "
+}
+```
+
+### Phase 2 — AISBench 安装（部署前）
+
+```
+Task 调用参数：
+{
+  "description": "AISBench安装",
+  "subagent_type": "serving-aisbench-install-subagent",
+  "prompt": "
+scene: aisbench-install
+
+执行路径 C · Phase 2 · AISBench 探测/源码安装（须在部署之前完成）。
+
+【强制】
+- Read 角色定义：agents/serving-aisbench-install-subagent.md
+- Read skill：configuration-tuning-skills/aisbench-install/SKILL.md
+- Read 模板：workflows/templates/aisbench-install-report-template.md
+- 验收 Phase 1 pd-check-status.md=passed
+- 安装目标来自 pd-deploy-config / Phase 1（优先 Prefill 容器）；不依赖 deploy 报告
+- 已安装则 skip；成功判据 ais_bench -h
+- 国内网络默认阿里云/清华 PyPI；默认源卡住勿长时间干等
+- 与 vLLM 同容器：安装/skip 后检查 numpy；2.5+ 须钉回 <2.5，写入报告（避免 Numba 导致 Phase 3 起不来）
+- failed 则不得进入 Phase 3 部署
+
+【输入】
+- workdir: {workdir}
+- 安装目标 host/container（来自配置表或用户指定）
+
+【输出】
+- {workdir}/pd-ratio/aisbench/aisbench-install-report.md
+- {workdir}/pd-ratio/aisbench/aisbench-install-status.md
+
+【完成回报】
+status（passed|skipped|failed）、ais_bench 路径。
+  "
+}
+```
+
+### Phase 3 — PD 部署
+
+```
+Task 调用参数：
+{
+  "description": "PD分离部署",
+  "subagent_type": "serving-pd-deploy-subagent",
+  "prompt": "
+scene: pd-deploy
+
+执行路径 C · Phase 3 · PD 部署。
+
+【强制】
+- Read 角色定义：agents/serving-pd-deploy-subagent.md
+- Read skill：configuration-tuning-skills/pd-deploy/SKILL.md
+- Read 模板：workflows/templates/pd-deploy-report-template.md
+- 验收 {workdir}/pd-ratio/check/pd-check-status.md 必须为 passed
+- 验收 {workdir}/pd-ratio/aisbench/aisbench-install-status.md 必须为 passed|skipped
+- 启动命令仅来自 {workdir}/pd-ratio/check/rendered/
+- 启动顺序：mooncake_master（若 required）→ Prefill → Decode → Proxy
+- **只拉最小实例**：P/D 可见卡 = DP×TP；禁止为「把卡用满」再起额外 rank 或改大 DP
+- 容器内必须交互等价壳（bash -ic / source ~/.bashrc）；禁止裸 bash -lc
+- Proxy 须为真实脚本；PROXY_TYPE 按配置，禁止凭 connector 猜
+- 健康检查以 POST /v1/chat/completions 为准；GET /v1/models 404 可忽略
+- 容器内勿依赖 ss；master 用 pgrep，P/D 用 /v1/models；加载等待须留足（可达十余分钟）
+- 若日志 Numba/numpy 2.5：钉回 numpy<2.5 后重试，勿改用户 LD_LIBRARY_PATH
+- 失败则 rollback_to_phase1=true，不得进入 Phase 4；停止并等用户确认。禁止自行去掉 MTP、加 spawn、改 LD_LIBRARY_PATH 或其它业务参数后重试
+
+【输入】
+- workdir: {workdir}
+
+【输出】
+- {workdir}/pd-ratio/deploy/pd-deploy-report.md
+- {workdir}/pd-ratio/deploy/pd-deploy-status.md
+
+【完成回报】
+status、proxy_base_url（成功时）、失败诊断与是否回退 Phase 1。
+  "
+}
+```
+
+### Phase 4 — PD 配比实测
+
+```
+Task 调用参数：
+{
+  "description": "PD配比实测",
+  "subagent_type": "serving-pd-ratio-benchmark-subagent",
+  "prompt": "
+scene: pd-ratio-benchmark
+
+执行路径 C · Phase 4 · AISBench 实测与最佳 PD 配比计算。
+
+【强制】
+- Read 角色定义：agents/serving-pd-ratio-benchmark-subagent.md
+- Read skill：configuration-tuning-skills/pd-ratio-benchmark/SKILL.md
+- Read 模板：workflows/templates/pd-ratio-report-template.md
+- 验收 Phase 2 aisbench passed|skipped；Phase 3 deploy passed
+- AISBench 配置必须含 summarizer；定长用 Synthetic；VLLMCustomAPIChat + stream=True 打 proxy
+- Proxy 冒烟用 /v1/chat/completions；忽略 /v1/models 404
+- SLO：读配置 TTFT/TPOT；空则 TTFT 不限、TPOT=50ms
+- **分侧约束**：P 只校验 TTFT；D 只校验 TPOT；禁止用 TPOT 判 P、用 TTFT 判 D
+- **P/D concurrency 可不同**；禁止强制对齐；禁止因 D 改并发而重跑 P
+- **饱和扫点（硬）**：推荐阶梯 2→4→8→16→32，必要时 64/128；禁止单点宣称最大吞吐；缺低并发前端必须补测
+- **最大并发**：撞上本侧 `--max-num-seqs` 且未饱和、本侧 SLO 仍合规 → 上调该侧 `max-num-seqs` 后继续扫；禁止把截断点当 selected；仍禁止改 MTP/spawn/LD_LIBRARY_PATH
+- **P 饱和**：out=1 无有效 TPOT；须见「低并发 TTFT/QPS 未峰 → 峰值 → QPS 平台且 TTFT 单涨」
+- **D 饱和**：须见「TTFT/TPOT 都偏小 → 同升 → TPOT 平台且仅 TTFT 涨」；仅 TPOT 作门禁
+- **D 测 prefix cache 100%**：`PrefixLen = RequestSize`；Prefill 临时 `--enable-prefix-caching`；P 测 `PrefixLen = 0`；验证 e2e 与 D 测同口径
+- 本侧不满足 → 只在本侧重测/补点；禁止用超约束点算配比；concurrency=1 仍失败则 status=failed
+- 每一轮立刻写入 attempts/；summary 含按 concurrency 排序的 P/D 曲线；报告含饱和判读
+- ≥64k 或预计很长：先告知用户耗时（TTFT 主导）；长任务远端后台+轮询
+- 先完成 P 扫点再 D；计算 ratio=QPS_P/QPS_D；配比与当前 in/out 绑定不可复用
+- **资源可达（硬）**：`avail_npus` = 设备类型整机卡数 × host 数（`pd-params.host_avail_npus`），**不是**基线 P/D 行 npu_count 之和
+  - 基线 QPS 在最小 1P1D 上测；拟合后再决定扩多少实例
+  - feasible=true → 按建议配比部署并做验证 e2e
+  - feasible=false → 按最大可达配比部署并验证；报告明示降级
+  - 无法扩出基线 → 可只做基线 e2e 对照并写明原因
+- **验证目标**：各拓扑在相同业务 in/out 下求 **TTFT+TPOT 合规的最大吞吐**（concurrency **可不同**），再比单卡 QPS；基线 `npus` = 实际占用的最小实例卡，不含空闲卡
+- **终态推荐（硬）**：以单卡吞吐最佳为准。`per_npu_improved=true` → 推荐验证拓扑；否则推荐并切回 **1P1D**。写 `recommend.json`
+- 指标：JSON 取 throughput；CSV 取 TTFT/TPOT（stable|total）
+
+【输入】
+- workdir: {workdir}
+- config_md_path: {config_md_path}
+- proxy_base_url: {proxy_base_url}
+
+【输出】
+- {workdir}/pd-ratio/benchmark/attempts/
+- {workdir}/pd-ratio/benchmark/p-qps-result.json
+- {workdir}/pd-ratio/benchmark/d-qps-result.json
+- {workdir}/pd-ratio/benchmark/ratio-calc.json
+- {workdir}/pd-ratio/benchmark/capacity-fit.json
+- {workdir}/pd-ratio/benchmark/recommend.json
+- {workdir}/pd-ratio/benchmark/verify/
+- {workdir}/pd-ratio/benchmark/pd-ratio-report.md
+- {workdir}/pd-ratio/benchmark/pd-ratio-status.md
+
+【完成回报】
+QPS_P、QPS_D、ratio、公式建议 N_P/N_D、验证候选、**终态推荐**、feasible、per_npu_improved、attempt 次数与路径、终态报告路径。
   "
 }
 ```
