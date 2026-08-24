@@ -1,0 +1,17 @@
+﻿# init.sh mounts only (do not ignore configuration-tuning-agents/AGENTS.md)
+/.cursor/
+/.cursor-plugin/
+/.claude/
+/.opencode/
+/.trae/
+/.trae-cn/
+/.marscode/
+/.traecli/
+/.codeartsdoer/
+/.github/
+/AGENTS.md
+/CLAUDE.md
+/workflows
+/commands
+/workspace
+/optimization

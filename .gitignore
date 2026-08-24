@@ -6,9 +6,24 @@ __pycache__/
 # ascend-baseline-generator remote docs HTML cache
 configuration-tuning-skills/ascend-baseline-generator/.cache/
 
-# init.sh project install artifacts (Cursor / OpenCode / etc.)
+# --- init.sh project-level outputs (never commit) ---
+# Cursor: CONFIG_ROOT=.cursor → agents / skills / workflows / manifest / AGENTS.md
 /.cursor/
+configuration-tuning-agents/.cursor/
+# Cursor plugin manifest is local-only (not part of init.sh; never commit)
+/.cursor-plugin/
+# Other IDEs (init.sh tool=)
+/.claude/
+/.opencode/
+/.trae/
+/.trae-cn/
+/.marscode/
+/.traecli/
+/.codeartsdoer/
+/.github/
+# Project-root mounts (install_config / install_workflows / leftover in-repo junctions)
 /AGENTS.md
+/CLAUDE.md
 /workflows
 
 # Local optimization cases (baseline summary, tuning placeholder, progress)
@@ -17,3 +32,4 @@ configuration-tuning-skills/ascend-baseline-generator/.cache/
 
 # Local Phase-0 config at repo root (workdir default is ./workspace)
 /deploy-config.md
+/pd-deploy-config.md

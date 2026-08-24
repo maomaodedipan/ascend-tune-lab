@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# ascend-tune-lab — configuration-tuning-agents installer (CANNBot-style)
+# ascend-tune-lab plugin installer.
+# Install flow follows cannbot-skills:
+#   plugins-official/triton-op-generator/init.sh
+#   plugins-official/model-infer-optimize/init.sh (agents / workflows)
+# ----------------------------------------------------------------------------------------------------------
 
-set -euo pipefail
+set -e
 
+# --- Color & output helpers ---
 if [ -t 1 ]; then
   GREEN='\033[0;32m'; YELLOW='\033[0;33m'; RED='\033[0;31m'
   CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; NC='\033[0m'
@@ -16,50 +21,79 @@ err()  { echo -e "  ${RED}✗${NC}${DIM} $*${NC}"; }
 info() { echo -e "  ${DIM}${CYAN}→${NC}${DIM} $*${NC}"; }
 step() { echo -e "${DIM}$*${NC}"; }
 
-detect_trae_variant() {
-  if [ -d "$HOME/.trae-cn" ]; then TRAE_VARIANT="ide"
-  elif [ -d "$HOME/.marscode" ]; then TRAE_VARIANT="plugin"
-  elif [ -d "$HOME/.traecli" ]; then TRAE_VARIANT="cli"
-  else TRAE_VARIANT="unknown"
-  fi
-}
-
 BRAND="ascend-tune-lab"
-TEAM="configuration-tuning-agents"
 VERSION="0.1.0"
+SOURCE_AGENT_FILE="AGENTS.md"
 
+# Skill whitelist (space-separated) — all skills bundled with this plugin
 INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency msprof-mcp-setup ascend-profiler-db-explorer ascend-profiler-data-validation ascend-computation-analysis ascend-communication-analysis ascend-schedule-analysis ascend-msprof-analyze-cli ascend-cluster-fast-slow-rank-detector op-mfu-calculator github-raw-fetch pd-config-env-check pd-deploy aisbench-install pd-ratio-benchmark compare-analyzer ascend-dump-analyzer cluster-analysis vllm-ascend-tuning"
-# 上表为安装挂载全集。能否快路径以 configuration-tuning-skills/README.md 的 invoke 分类为准（Primary 只声明 standalone+dual）。
 INCLUDED_AGENT_PATTERN="serving-*"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="$SCRIPT_DIR"
-REPO_ROOT="$(cd "$PLUGIN_ROOT/.." && pwd)"
-LOCAL_AGENT_ROOT="$PLUGIN_ROOT/agents"
-SKILL_ROOT="$REPO_ROOT/configuration-tuning-skills"
+# Detect TRAE variant by scanning global config directories.
+# Sets global: TRAE_VARIANT=(ide|plugin|cli|unknown)
+detect_trae_variant() {
+    if [ -d "$HOME/.trae" ]; then
+        TRAE_VARIANT="ide"
+    elif [ -d "$HOME/.marscode" ]; then
+        TRAE_VARIANT="plugin"
+    elif [ -d "$HOME/.traecli" ]; then
+        TRAE_VARIANT="cli"
+    else
+        TRAE_VARIANT="unknown"
+    fi
+}
+
+show_banner() {
+  echo ""
+  echo -e "${CYAN}${BOLD}ascend-tune-lab${NC}"
+  echo -e "  ${BOLD}vLLM-Ascend 服务化性能优化${NC}"
+  echo ""
+}
 
 show_help() {
-  cat <<EOF
-ascend-tune-lab — vLLM-Ascend 服务化性能优化 Agent 安装脚本
+    cat << EOF
+ascend-tune-lab - Plugin Installer
 
 Usage: init.sh [level] [tool] [install_path]
 
 Arguments:
-  level        project (default) | global
-  tool         opencode (default) | claude | trae | cursor | copilot | codearts
-  install_path 项目安装目录（默认：当前工作目录）
+  level        - Installation level: "project" (default) or "global"
+  tool         - Target tool: "opencode" (default), "claude", "trae", "cursor", "copilot", or "codearts"
+  install_path - Project-level installation directory (default: current working directory)
 
-安装内容:
-  - AGENTS.md（primary: serving-perf-optimization）
-  - agents/*.md（subagent 符号链接）
-  - skills/*（configuration-tuning-skills 符号链接；调用分类见 configuration-tuning-skills/README.md）
-  - workflows/（工作流、模板、派发脚本 — 符号链接）
-  - configuration-tuning-skills/、configuration-tuning-agents/（仓库路径符号链接，便于 skill 内绝对路径）
+Options:
+  --help  - Show this help message
 
 Examples:
-  ./init.sh project cursor
-  ./init.sh project cursor /path/to/your/serving/project
-  ./init.sh project opencode
+  init.sh                              # Project-level, OpenCode
+  init.sh project opencode             # Project-level, OpenCode
+  init.sh global  opencode             # Global-level, OpenCode
+  init.sh project claude               # Project-level, Claude Code
+  init.sh global  claude               # Global-level, Claude Code
+  init.sh project trae                 # Project-level, Trae
+  init.sh project cursor               # Project-level, Cursor
+  init.sh project copilot              # Project-level, Copilot
+  init.sh global  copilot              # Global-level, Copilot
+  init.sh project codearts             # Project-level, CodeArts
+  init.sh project claude /path/to/proj # Project-level, Claude Code, custom path
+
+Installation paths:
+  OpenCode: .opencode/skills/ + AGENTS.md  (auto-discovered)
+  Claude:   .claude/skills/ + CLAUDE.md    (per-item symlinks auto-created)
+  Trae:     .trae/skills/ + AGENTS.md      (project-level only)
+  Cursor:   .cursor/skills/ + AGENTS.md    (auto-discovered)
+  Copilot:  .github/skills/ + AGENTS.md    (project-level)
+            ~/.copilot/skills/ + AGENTS.md (global)
+  CodeArts: .codeartsdoer/skills/ + AGENTS.md    (project-level)
+            ~/.codeartsdoer/skills/ + AGENTS.md   (global)
+
+After installation, launch directly:
+  OpenCode: opencode
+  Claude:   claude
+  Trae:     通过 CLI 或 IDE 启动
+  Cursor:   通过 Cursor IDE 启动
+  Copilot:  通过 GitHub Copilot CLI / IDE 启动
+  CodeArts: 通过 CodeArts CLI / IDE 启动
 EOF
 }
 
@@ -67,257 +101,361 @@ LEVEL="project"
 TOOL="opencode"
 INSTALL_PATH=""
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_ROOT="$SCRIPT_DIR"
+LOCAL_AGENT_ROOT="$PLUGIN_ROOT/agents"
+
+# Sibling skills directory (source tree).
+if [ -d "$PLUGIN_ROOT/../configuration-tuning-skills" ]; then
+    LOCAL_SKILL_ROOT="$(cd "$PLUGIN_ROOT/../configuration-tuning-skills" && pwd)"
+else
+    LOCAL_SKILL_ROOT=""
+fi
+
+if [ -z "$LOCAL_SKILL_ROOT" ] || [ ! -d "$LOCAL_SKILL_ROOT" ]; then
+    err "Cannot find configuration-tuning-skills/. Please run init.sh from the source tree."
+    exit 1
+fi
+
 for arg in "$@"; do
-  case "$arg" in
-    --help) show_help; exit 0 ;;
-    global|project) LEVEL="$arg" ;;
-    opencode|claude|trae|cursor|copilot|codearts) TOOL="$arg" ;;
-  esac
+    case "$arg" in
+        --help)                 show_help; exit 0 ;;
+        global|project)         LEVEL="$arg" ;;
+        opencode|claude|trae|cursor|copilot|codearts) TOOL="$arg" ;;
+        *)
+            if [ -n "$INSTALL_PATH" ]; then
+                echo "Error: Unexpected argument '$arg'. Valid: global, project, opencode, claude, trae, cursor, copilot, codearts, [install_path], --help."
+                exit 1
+            fi
+            INSTALL_PATH="$arg"
+            ;;
+    esac
 done
 
-if [ "$#" -gt 0 ]; then
-  last_arg="${!#}"
-  case "$last_arg" in
-    --help|global|project|opencode|claude|trae|cursor|copilot|codearts) ;;
-    *) INSTALL_PATH="$last_arg" ;;
-  esac
-fi
-
-if [ "$LEVEL" = "global" ]; then
-  case "$TOOL" in
-    opencode) CONFIG_ROOT="$HOME/.config/opencode" ;;
-    trae)
-      detect_trae_variant
-      case "$TRAE_VARIANT" in
-        plugin) CONFIG_ROOT="$HOME/.marscode" ;;
-        cli)    CONFIG_ROOT="$HOME/.traecli" ;;
-        *)      CONFIG_ROOT="$HOME/.trae-cn" ;;
-      esac
-      ;;
-    cursor)   CONFIG_ROOT="$HOME/.cursor" ;;
-    copilot)  CONFIG_ROOT="$HOME/.copilot" ;;
-    codearts) CONFIG_ROOT="$HOME/.codeartsdoer" ;;
-    *)        CONFIG_ROOT="$HOME/.claude" ;;
-  esac
-  CONFIG_ROOT_BASE="$CONFIG_ROOT"
+# Resolve project-level install base (default: current dir; override via install_path arg).
+# Global level installs under $HOME and ignores install_path.
+if [ -n "$INSTALL_PATH" ]; then
+    if [ ! -d "$INSTALL_PATH" ]; then
+        echo "Error: install_path '$INSTALL_PATH' is not an existing directory."
+        exit 1
+    fi
+    INSTALL_BASE="$(cd "$INSTALL_PATH" && pwd)"
 else
-  if [ -n "$INSTALL_PATH" ]; then
-    CONFIG_ROOT_BASE="$(cd "$INSTALL_PATH" && pwd)"
-  else
-    CONFIG_ROOT_BASE="$PWD"
-  fi
-  case "$TOOL" in
-    opencode) CONFIG_ROOT="$CONFIG_ROOT_BASE/.opencode" ;;
-    trae)
-      detect_trae_variant
-      case "$TRAE_VARIANT" in
-        plugin) CONFIG_ROOT="$CONFIG_ROOT_BASE/.marscode" ;;
-        cli)    CONFIG_ROOT="$CONFIG_ROOT_BASE/.traecli" ;;
-        *)      CONFIG_ROOT="$CONFIG_ROOT_BASE/.trae" ;;
-      esac
-      ;;
-    cursor)   CONFIG_ROOT="$CONFIG_ROOT_BASE/.cursor" ;;
-    copilot)  CONFIG_ROOT="$CONFIG_ROOT_BASE/.github" ;;
-    codearts) CONFIG_ROOT="$CONFIG_ROOT_BASE/.codeartsdoer" ;;
-    *)        CONFIG_ROOT="$CONFIG_ROOT_BASE/.claude" ;;
-  esac
+    INSTALL_BASE="$PWD"
 fi
 
-TUNE_DIR="$CONFIG_ROOT/$BRAND"
-
-realpath_safe() {
-  if command -v realpath >/dev/null 2>&1; then
-    realpath "$1"
-  else
-    python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$1"
-  fi
-}
-
-install_skill_links() {
-  local target_root="$1"
-  mkdir -p "$target_root"
-  local count=0
-  for skill in $INCLUDED_SKILLS; do
-    local src="$SKILL_ROOT/$skill"
-    if [ -d "$src" ]; then
-      rm -rf "$target_root/$skill"
-      ln -sfn "$(realpath_safe "$src")" "$target_root/$skill"
-      count=$((count + 1))
+# Determine config root directory and target md filename
+if [ "$LEVEL" = "global" ]; then
+    if [ "$TOOL" = "opencode" ]; then
+        CONFIG_ROOT="$HOME/.config/opencode"
+    elif [ "$TOOL" = "trae" ]; then
+        echo "Error: Global installation is not supported for Trae. Use project-level instead."
+        exit 1
+    elif [ "$TOOL" = "copilot" ]; then
+        CONFIG_ROOT="$HOME/.copilot"
+    elif [ "$TOOL" = "cursor" ]; then
+        CONFIG_ROOT="$HOME/.cursor"
+    elif [ "$TOOL" = "codearts" ]; then
+        CONFIG_ROOT="$HOME/.codeartsdoer"
     else
-      warn "Skill not found: $src"
+        CONFIG_ROOT="$HOME/.claude"
     fi
-  done
-  ok "Skills: $count linked → $target_root"
-}
+else
+    if [ "$TOOL" = "opencode" ]; then
+        CONFIG_ROOT="$INSTALL_BASE/.opencode"
+    elif [ "$TOOL" = "trae" ]; then
+        detect_trae_variant
+        case "$TRAE_VARIANT" in
+            plugin) CONFIG_ROOT="$INSTALL_BASE/.marscode" ;;
+            cli)    CONFIG_ROOT="$INSTALL_BASE/.traecli" ;;
+            *)      CONFIG_ROOT="$INSTALL_BASE/.trae" ;;
+        esac
+    elif [ "$TOOL" = "copilot" ]; then
+        CONFIG_ROOT="$INSTALL_BASE/.github"
+    elif [ "$TOOL" = "cursor" ]; then
+        CONFIG_ROOT="$INSTALL_BASE/.cursor"
+    elif [ "$TOOL" = "codearts" ]; then
+        CONFIG_ROOT="$INSTALL_BASE/.codeartsdoer"
+    else
+        CONFIG_ROOT="$INSTALL_BASE/.claude"
+    fi
+fi
 
-install_agent_links() {
-  local target_root="$1"
-  mkdir -p "$target_root"
-  local count=0
-  for agent_entry in "$LOCAL_AGENT_ROOT"/*.md; do
-    [ -f "$agent_entry" ] || continue
-    local name base
-    name=$(basename "$agent_entry")
-    base="${name%.md}"
-    case "$base" in
-      $INCLUDED_AGENT_PATTERN) ;;
-      *) continue ;;
+if [ "$TOOL" = "opencode" ] || [ "$TOOL" = "trae" ] || [ "$TOOL" = "cursor" ] || [ "$TOOL" = "copilot" ] || [ "$TOOL" = "codearts" ]; then
+    TARGET_MD_NAME="AGENTS.md"
+else
+    TARGET_MD_NAME="CLAUDE.md"
+fi
+
+BRAND_DIR="$CONFIG_ROOT"
+
+show_banner
+echo "  Tool:      $TOOL"
+echo "  Level:     $LEVEL"
+echo "  Path:      $CONFIG_ROOT"
+echo "  MD File:   $TARGET_MD_NAME"
+echo ""
+
+if [ "$TOOL" = "trae" ]; then
+    case "$TRAE_VARIANT" in
+        ide)
+            info "Detected: TRAE IDE (.trae)"
+            ;;
+        plugin)
+            info "Detected: TRAE Plugin (.marscode)"
+            ;;
+        cli)
+            info "Detected: TRAE CLI (.traecli)"
+            ;;
+        unknown)
+            warn "TRAE variant not detected; defaulting to IDE path"
+            warn "If you use TRAE Plugin, ensure ~/.marscode exists before re-running"
+            warn "If you use TRAE CLI, ensure ~/.traecli exists before re-running"
+            ;;
     esac
-    rm -f "$target_root/$name"
-    ln -sfn "$(realpath_safe "$agent_entry")" "$target_root/$name"
-    count=$((count + 1))
-  done
-  ok "Agents: $count linked → $target_root"
-}
+    echo ""
+fi
 
-install_config() {
-  local config_src="$PLUGIN_ROOT/AGENTS.md"
-  local config_name="AGENTS.md"
-  if [ "$TOOL" = "claude" ] && [ "$LEVEL" = "project" ]; then
-    config_name="CLAUDE.md"
-  elif [ "$TOOL" = "claude" ] && [ "$LEVEL" = "global" ]; then
-    config_name="CLAUDE.md"
-  fi
+# --- Step 0: Confirmation before installation ---
+step "[0/4] Checking items to be installed..."
 
-  local config_target
-  if [ "$LEVEL" = "project" ]; then
-    config_target="$CONFIG_ROOT_BASE/$config_name"
+SKILLS_TO_INSTALL=""
+SKILL_COUNT=0
+for skill_entry in "$LOCAL_SKILL_ROOT"/*; do
+    [ -e "$skill_entry" ] || continue
+    name=$(basename "$skill_entry")
+    echo "$INCLUDED_SKILLS" | grep -qw "$name" || continue
+    SKILLS_TO_INSTALL="$SKILLS_TO_INSTALL $name"
+    SKILL_COUNT=$((SKILL_COUNT + 1))
+done
+
+SOURCE_AGENT_PATH="$PLUGIN_ROOT/$SOURCE_AGENT_FILE"
+AGENT_FILE_EXISTS=false
+if [ -f "$SOURCE_AGENT_PATH" ]; then
+    AGENT_FILE_EXISTS=true
+fi
+
+echo ""
+echo -e "${BOLD}以下内容将被安装/替换：${NC}"
+echo ""
+
+if [ "$SKILL_COUNT" -gt 0 ]; then
+    echo -e "${CYAN}Skills (${SKILL_COUNT} 项)：${NC}"
+    for name in $SKILLS_TO_INSTALL; do
+        target="$BRAND_DIR/skills/$name"
+        if [ -e "$target" ] || [ -L "$target" ]; then
+            echo -e "  ${YELLOW}$name${NC}"
+        else
+            echo -e "  ${GREEN}$name${NC}"
+        fi
+    done
+    echo ""
+fi
+
+if [ "$AGENT_FILE_EXISTS" = true ]; then
+    echo -e "${CYAN}${TARGET_MD_NAME} (1 项)：${NC}"
+    target="$BRAND_DIR/$TARGET_MD_NAME"
+    if [ -e "$target" ] || [ -L "$target" ]; then
+        echo -e "  ${YELLOW}${TARGET_MD_NAME}${NC}"
+    else
+        echo -e "  ${GREEN}${TARGET_MD_NAME}${NC}"
+    fi
+    echo ""
+fi
+
+echo -e "${BOLD}${YELLOW}注意：仅替换上述白名单内的内容，不影响其他已存在的 skills${NC}"
+echo ""
+ok "开始安装..."
+echo ""
+
+# --- Step 1: Create directory + per-item symlinks ---
+step "[1/4] Setting up plugin directory..."
+mkdir -p "$BRAND_DIR/skills"
+
+for skill_entry in "$LOCAL_SKILL_ROOT"/*; do
+    [ -e "$skill_entry" ] || continue
+    name=$(basename "$skill_entry")
+    echo "$INCLUDED_SKILLS" | grep -qw "$name" || continue
+    target="$BRAND_DIR/skills/$name"
+    if [ -e "$target" ] || [ -L "$target" ]; then
+        rm -rf "$target"
+    fi
+done
+
+skill_link_count=0
+for skill_entry in "$LOCAL_SKILL_ROOT"/*; do
+    [ -e "$skill_entry" ] || continue
+    name=$(basename "$skill_entry")
+    echo "$INCLUDED_SKILLS" | grep -qw "$name" || continue
+    ln -sfn "$(realpath "$skill_entry")" "$BRAND_DIR/skills/$name"
+    skill_link_count=$((skill_link_count + 1))
+done
+ok "Skills: $skill_link_count linked"
+
+for link in "$BRAND_DIR/skills"/*; do
+    [ -L "$link" ] && [ ! -e "$link" ] && rm "$link"
+done
+
+# Agents (model-infer-optimize)
+if [ -d "$LOCAL_AGENT_ROOT" ]; then
+    mkdir -p "$BRAND_DIR/agents"
+    agent_link_count=0
+    for agent_entry in "$LOCAL_AGENT_ROOT"/*; do
+        [ -e "$agent_entry" ] || continue
+        name=$(basename "$agent_entry")
+        base="${name%.md}"
+        case "$base" in
+            $INCLUDED_AGENT_PATTERN) ;;
+            *) continue ;;
+        esac
+        rm -f "$BRAND_DIR/agents/$name"
+        ln -sfn "$(realpath "$agent_entry")" "$BRAND_DIR/agents/$name"
+        agent_link_count=$((agent_link_count + 1))
+    done
+    ok "Agents: $agent_link_count linked"
+fi
+
+# Workflows (model-infer-optimize)
+if [ -d "$PLUGIN_ROOT/workflows" ]; then
+    mkdir -p "$BRAND_DIR"
+    ln -sfn "$(realpath "$PLUGIN_ROOT/workflows")" "$BRAND_DIR/workflows"
+    ok "workflows"
+fi
+echo ""
+
+# --- Step 2: Install config file (AGENTS.md / CLAUDE.md) ---
+step "[2/4] Installing configuration..."
+
+if [ "$LEVEL" = "project" ]; then
+    if [ "$TOOL" = "opencode" ] || [ "$TOOL" = "cursor" ] || [ "$TOOL" = "copilot" ] || [ "$TOOL" = "codearts" ]; then
+        config_target="$INSTALL_BASE/AGENTS.md"
+    else
+        config_target="$INSTALL_BASE/CLAUDE.md"
+    fi
+else
+    if [ "$TOOL" = "opencode" ] || [ "$TOOL" = "cursor" ] || [ "$TOOL" = "copilot" ] || [ "$TOOL" = "codearts" ]; then
+        config_target="$CONFIG_ROOT/AGENTS.md"
+    else
+        config_target="$CONFIG_ROOT/CLAUDE.md"
+    fi
+fi
+
+config_src="$PLUGIN_ROOT/AGENTS.md"
+
+# Skip only when source file is already at target location
+# (PLUGIN_ROOT = INSTALL_BASE, e.g. cd configuration-tuning-agents && bash init.sh project cursor)
+if { [ "$TOOL" = "opencode" ] || [ "$TOOL" = "cursor" ] || [ "$TOOL" = "copilot" ] || [ "$TOOL" = "codearts" ]; } && [ "$LEVEL" = "project" ] && [ "$PLUGIN_ROOT" = "$INSTALL_BASE" ]; then
+    ok "$(basename "$config_target") already in current directory"
+else
+    if [ "$LEVEL" = "global" ]; then
+        [ -e "$config_target" ] || [ -L "$config_target" ] && rm -f "$config_target"
+        PLUGIN_ROOT_ABS="$(realpath "$PLUGIN_ROOT")"
+        ESCAPED_ROOT="$(echo "$PLUGIN_ROOT_ABS" | sed 's/#/\\#/g')"
+        sed \
+          -e "s#\`workflows/#\`${ESCAPED_ROOT}/workflows/#g" \
+          "$config_src" > "$config_target"
+        ok "$(basename "$config_target") (absolute paths for global mode)"
+    else
+        ln -sf "$config_src" "$config_target"
+        ok "$(basename "$config_target")"
+    fi
+fi
+echo ""
+
+# --- Step 3: Health check + manifest ---
+step "[3/4] Running health check..."
+health_ok=true
+health_errors=""
+
+for sub in skills; do
+  target="$BRAND_DIR/$sub"
+  if [ -d "$target" ]; then
+    count=$(ls -d "$target"/* 2>/dev/null | wc -l)
+    [ "$count" -eq 0 ] && { health_errors="${health_errors}\n  ${YELLOW}⚠${NC} $sub/ is empty"; }
   else
-    config_target="$CONFIG_ROOT/$config_name"
+    health_errors="${health_errors}\n  ${RED}✗${NC} $sub/ missing"
+    health_ok=false
   fi
+done
 
-  mkdir -p "$CONFIG_ROOT"
-  if [ -e "$config_target" ] && [ ! -L "$config_target" ] && [ "$PLUGIN_ROOT/AGENTS.md" != "$config_target" ]; then
-    warn "$(basename "$config_target") exists; replacing with symlink to plugin AGENTS.md"
-  fi
-  ln -sfn "$(realpath_safe "$config_src")" "$config_target"
-  ok "$(basename "$config_target") → $config_target"
-
-  if [ "$LEVEL" = "project" ] && [ "$config_target" != "$CONFIG_ROOT/$config_name" ]; then
-    ln -sfn "$(realpath_safe "$config_src")" "$CONFIG_ROOT/$config_name"
-    ok "$(basename "$config_name") → $CONFIG_ROOT/$config_name"
-  fi
-}
-
-install_workflows() {
-  local wf_src="$PLUGIN_ROOT/workflows"
-  [ -d "$wf_src" ] || { warn "workflows/ not found in plugin"; return 0; }
-
-  mkdir -p "$CONFIG_ROOT"
-  rm -f "$CONFIG_ROOT/workflows"
-  ln -sfn "$(realpath_safe "$wf_src")" "$CONFIG_ROOT/workflows"
-  ok "workflows → $CONFIG_ROOT/workflows"
-
-  if [ "$LEVEL" = "project" ]; then
-    rm -f "$CONFIG_ROOT_BASE/workflows"
-    ln -sfn "$(realpath_safe "$wf_src")" "$CONFIG_ROOT_BASE/workflows"
-    ok "workflows → $CONFIG_ROOT_BASE/workflows (project root)"
-  fi
-}
-
-install_repo_path_links() {
-  if [ "$LEVEL" != "project" ]; then
-    return 0
-  fi
-  for spec in "$SKILL_ROOT:configuration-tuning-skills" "$PLUGIN_ROOT:configuration-tuning-agents"; do
-    local src="${spec%%:*}"
-    local repo_name="${spec#*:}"
-    local dest="$CONFIG_ROOT_BASE/$repo_name"
-    local src_abs dest_abs
-    src_abs="$(realpath_safe "$src")"
-    if [ -e "$dest" ]; then
-      dest_abs="$(realpath_safe "$dest")"
-      if [ "$src_abs" = "$dest_abs" ]; then
-        info "$repo_name already present in-repo, skip symlink"
-        continue
-      fi
+if [ "$LEVEL" = "project" ]; then
+    if [ "$TOOL" = "opencode" ] || [ "$TOOL" = "cursor" ] || [ "$TOOL" = "copilot" ] || [ "$TOOL" = "codearts" ]; then
+        [ -f "$INSTALL_BASE/AGENTS.md" ] || { health_errors="${health_errors}\n  ${RED}✗${NC} AGENTS.md missing in project directory"; health_ok=false; }
+    else
+        [ -f "$INSTALL_BASE/CLAUDE.md" ] || { health_errors="${health_errors}\n  ${RED}✗${NC} CLAUDE.md missing in project directory"; health_ok=false; }
     fi
-    if [ -d "$dest" ] && [ ! -L "$dest" ]; then
-      warn "$repo_name exists as directory; skip symlink (use in-repo paths)"
-      continue
+else
+    if [ "$TOOL" = "opencode" ] || [ "$TOOL" = "cursor" ] || [ "$TOOL" = "copilot" ] || [ "$TOOL" = "codearts" ]; then
+        [ -f "$CONFIG_ROOT/AGENTS.md" ] || { health_errors="${health_errors}\n  ${RED}✗${NC} AGENTS.md missing"; health_ok=false; }
+    else
+        [ -f "$CONFIG_ROOT/CLAUDE.md" ] || { health_errors="${health_errors}\n  ${RED}✗${NC} CLAUDE.md missing"; health_ok=false; }
     fi
-    rm -f "$dest"
-    ln -sfn "$src_abs" "$dest"
-    ok "$repo_name → $dest"
-  done
-}
+fi
 
-write_manifest() {
-  local manifest="$CONFIG_ROOT/${BRAND}-manifest.json"
-  local skills_json agents_json
-  skills_json=$(printf '%s\n' $INCLUDED_SKILLS | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))")
-  agents_json=$(find "$LOCAL_AGENT_ROOT" -maxdepth 1 -name 'serving-*.md' -printf '%f\n' 2>/dev/null | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))" || echo '[]')
-  cat > "$manifest" <<EOF
+MANIFEST="$CONFIG_ROOT/cannbot-manifest.json"
+
+SKILLS_JSON="[]"
+if [ -d "$BRAND_DIR/skills" ]; then
+  SKILLS_JSON=$(ls -d "$BRAND_DIR/skills"/* 2>/dev/null | while read d; do
+    echo "${d##*/}"
+  done | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))" 2>/dev/null || echo "[]")
+fi
+
+AGENTS_JSON="[]"
+if [ -d "$LOCAL_AGENT_ROOT" ]; then
+  AGENTS_JSON=$(find "$LOCAL_AGENT_ROOT" -maxdepth 1 -name 'serving-*.md' -printf '%f\n' 2>/dev/null | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))" 2>/dev/null || echo "[]")
+fi
+
+cat > "$MANIFEST" << MANIFEST_EOF
 {
   "brand": "$BRAND",
   "version": "$VERSION",
-  "team": "$TEAM",
+  "team": "$BRAND",
   "level": "$LEVEL",
   "tool": "$TOOL",
-  "workflow_entry": "workflows/primary-workflow.md",
-  "installed_skills": $skills_json,
-  "installed_agents": $agents_json,
-  "config_root": "$CONFIG_ROOT",
+  "installed_skills": $SKILLS_JSON,
+  "installed_agents": $AGENTS_JSON,
+  "installed_md_file": "$TARGET_MD_NAME",
+  "brand_dir": "$CONFIG_ROOT",
   "install_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
-EOF
-  ok "Manifest: $manifest"
-}
+MANIFEST_EOF
 
-show_banner() {
-  echo ""
-  echo -e "${CYAN}${BOLD}ascend-tune-lab${NC}${DIM} · configuration-tuning-agents${NC}"
-  echo ""
-}
+[ -f "$MANIFEST" ] || { health_errors="${health_errors}\n  ${RED}✗${NC} Manifest generation failed"; health_ok=false; }
 
-show_banner
-echo "  Tool:   $TOOL"
-echo "  Level:  $LEVEL"
-echo "  Config: $CONFIG_ROOT"
-echo "  Project: $CONFIG_ROOT_BASE"
-echo ""
-
-step "[1/5] Skills & agents..."
-mkdir -p "$TUNE_DIR"
-install_skill_links "$TUNE_DIR/skills"
-install_agent_links "$CONFIG_ROOT/agents"
-echo ""
-
-step "[2/5] Primary config..."
-install_config
-echo ""
-
-step "[3/5] Workflows..."
-install_workflows
-echo ""
-
-step "[4/5] Repo path links..."
-install_repo_path_links
-echo ""
-
-step "[5/5] Manifest & health check..."
-write_manifest
-
-health_ok=true
-[ -L "$CONFIG_ROOT/workflows" ] || [ -d "$CONFIG_ROOT/workflows" ] || { err "workflows mount missing under $CONFIG_ROOT"; health_ok=false; }
-  [ -f "$CONFIG_ROOT/workflows/primary-workflow.md" ] || { err "workflow entry missing"; health_ok=false; }
-  [ -f "$CONFIG_ROOT/workflows/serving-tuning-workflow.md" ] || { err "serving-tuning workflow missing"; health_ok=false; }
-  [ -f "$CONFIG_ROOT/workflows/profiling-analysis-workflow.md" ] || { err "profiling-analysis workflow missing"; health_ok=false; }
-  [ -f "$CONFIG_ROOT/workflows/pd-ratio-workflow.md" ] || { err "pd-ratio workflow missing"; health_ok=false; }
-[ -d "$TUNE_DIR/skills" ] || { err "skills dir missing"; health_ok=false; }
-[ -d "$CONFIG_ROOT/agents" ] || { err "agents dir missing"; health_ok=false; }
-
-if [ "$health_ok" = true ]; then
-  ok "Health check passed"
+if [ "$health_ok" = true ] && [ -z "$health_errors" ]; then
+  ok "All checks passed"
 else
-  exit 1
+  echo -e "$health_errors"
+  [ "$health_ok" = true ] && warn "Some warnings, see above" || err "Some checks failed, see above"
 fi
+echo ""
 
+# --- Step 4: Summary & Quick Start ---
+step "[4/4] Done."
 echo ""
-echo -e "  ${GREEN}${BOLD}✓ configuration-tuning-agents installed${NC}"
+echo -e "  ${GREEN}${BOLD}✓ ascend-tune-lab installed successfully!${NC}"
 echo ""
-echo -e "  ${BOLD}Quick start:${NC}"
-echo -e "  ${CYAN}1.${NC} 在目标项目打开 Agent（$TOOL）"
-echo -e "  ${CYAN}2.${NC} 启动 Agent；未指定工作目录时使用 ${DIM}./workspace${NC}；若无 ${DIM}deploy-config.md${NC}，将自动生成模板，填完 ${DIM}## 基本参数${NC} 后重新发起"
-echo -e "  ${CYAN}3.${NC} Primary 将 Read：${DIM}workflows/primary-workflow.md${NC}（先判定独立 skill 快路径，再进入服务化调优 / Profiling / PD 配比）"
+echo -e "  ${BOLD}Quick Start:${NC}"
+if [ "$TOOL" = "opencode" ]; then
+  echo -e "  ${CYAN}1.${NC} 启动 CLI: ${GREEN}opencode${NC}"
+  echo -e "  ${CYAN}2.${NC} 直接输入需求: ${GREEN}${BOLD}帮我做服务化调优${NC}"
+elif [ "$TOOL" = "trae" ]; then
+  echo -e "  ${CYAN}1.${NC} 通过 CLI/IDE 启动${NC}"
+  echo -e "  ${CYAN}2.${NC} 直接输入需求: ${GREEN}${BOLD}帮我做服务化调优${NC}"
+elif [ "$TOOL" = "copilot" ]; then
+  echo -e "  ${CYAN}1.${NC} 通过 GitHub Copilot CLI / IDE 启动${NC}"
+  echo -e "  ${CYAN}2.${NC} 直接输入需求: ${GREEN}${BOLD}帮我做服务化调优${NC}"
+elif [ "$TOOL" = "cursor" ]; then
+  echo -e "  ${CYAN}1.${NC} 通过 Cursor IDE 启动${NC}"
+  echo -e "  ${CYAN}2.${NC} 直接输入需求: ${GREEN}${BOLD}帮我做服务化调优${NC}"
+elif [ "$TOOL" = "codearts" ]; then
+  echo -e "  ${CYAN}1.${NC} 通过 CodeArts CLI / IDE 启动${NC}"
+  echo -e "  ${CYAN}2.${NC} 直接输入需求: ${GREEN}${BOLD}帮我做服务化调优${NC}"
+else
+  echo -e "  ${CYAN}1.${NC} 启动 CLI: ${GREEN}claude${NC}"
+  echo -e "  ${CYAN}2.${NC} 直接输入需求: ${GREEN}${BOLD}帮我做服务化调优${NC}"
+fi
+echo ""
+echo -e "  ${DIM}Note: 所有执行阶段将在当前会话中实时显示${NC}"
 echo ""

@@ -4,31 +4,34 @@ vLLM-Ascend 服务化性能优化编排，架构 **Plugin → Agent → Skill**�
 
 - **Primary**：[`AGENTS.md`](AGENTS.md) — `serving-perf-optimization`（快路径或三路径路由）
 - **Subagents**：[`agents/`](agents/) — 服务化 Phase 1 / Phase 2，独立 Profiling，以及 **路径 C · PD 配比** 四阶段
-- **工作流**：[`workflows/`](workflows/) — 顶层 `primary-workflow.md` + 平级路径（服务化调优 / Profiling / PD 配比）
+- **工作流**：[`workflows/`](workflows/) — 短路由 `primary-workflow.md`（锁 path + 查表）+ 各路径一页门禁
 - **Skill 调用**：[`../configuration-tuning-skills/README.md`](../configuration-tuning-skills/README.md) — `standalone` / `dual` / `pipeline-only`；独立工具不走 A/B/C
-- **安装**：[`init.sh`](init.sh) — 挂载 skills / agents / **workflows** 到目标项目
+- **安装**：仓库根 [`quickstart.md`](../quickstart.md)；脚本 [`init.sh`](init.sh)（安装流程对齐 CANNBot `init.sh`）
+- **派发设计**：[`docs/path-lock-dispatch-design.md`](docs/path-lock-dispatch-design.md) — 路径锁定、状态机派发、子代理上下文隔离
 
 ## 安装（推荐）
 
 在**目标服务项目**根目录执行（或指定 `install_path`）：
 
 ```bash
-/path/to/ascend-tune-lab/configuration-tuning-agents/init.sh project cursor
-# 或
-/path/to/ascend-tune-lab/configuration-tuning-agents/init.sh project cursor /path/to/your/project
+cd /path/to/ascend-tune-lab/configuration-tuning-agents
+bash init.sh project cursor
+# 或安装到指定项目
+bash init.sh project cursor /path/to/your/project
 ```
 
 `init.sh` 会安装：
 
 | 挂载项 | 目标位置（Cursor project 示例） |
 | --- | --- |
-| Primary | `./AGENTS.md`、`.cursor/AGENTS.md` |
+| Primary | 安装目标 `AGENTS.md`（在插件目录执行时文件已在当前目录，跳过） |
 | Subagents | `.cursor/agents/*.md` |
-| Skills | `.cursor/ascend-tune-lab/skills/*` |
-| **Workflows** | `.cursor/workflows/` **与** `./workflows/`（符号链接到本插件 `workflows/`） |
-| 仓库路径 | `./configuration-tuning-skills/`、`./configuration-tuning-agents/` |
+| Skills | `.cursor/skills/*` |
+| Workflows | `.cursor/workflows/` |
 
-安装后 primary 读取的工作流入口为：**`workflows/primary-workflow.md`**（先判定独立 skill 快路径，再进入平级路径详文）。Skill 分类见 [`../configuration-tuning-skills/README.md`](../configuration-tuning-skills/README.md)。
+安装后 primary 读取的工作流入口为：**`workflows/primary-workflow.md`**（先锁 path，再按表派发；路径详文只含门禁与 Phase 0）。Skill 分类见 [`../configuration-tuning-skills/README.md`](../configuration-tuning-skills/README.md)。
+
+用户安装步骤见仓库根 [`quickstart.md`](../quickstart.md)。`init.sh` 对齐 CANNBot：skills 挂到 `.cursor/skills/`（不是 Marketplace，也不复制到 `~/.cursor/plugins/local`）。在插件目录执行 `bash init.sh project cursor` 时，`AGENTS.md` 已在当前目录则跳过。若 Cursor 打开的是仓库根，第三个参数传仓库路径。
 
 Profiling MCP 接入见 skill：`configuration-tuning-skills/msprof-mcp-setup/`（`pipeline-only`；bootstrap 脚本不绑在 init 默认路径）。
 
@@ -51,13 +54,7 @@ configuration-tuning-agents/
 ├── AGENTS.md
 ├── README.md
 ├── agents/
-│   ├── serving-baseline-reproduce-subagent.md
-│   ├── serving-tuning-subagent.md
-│   ├── serving-profiling-analysis-subagent.md
-│   ├── serving-pd-config-check-subagent.md
-│   ├── serving-pd-deploy-subagent.md
-│   ├── serving-aisbench-install-subagent.md
-│   └── serving-pd-ratio-benchmark-subagent.md
+│   └── serving-*.md
 └── workflows/
     ├── primary-workflow.md
     ├── serving-tuning-workflow.md

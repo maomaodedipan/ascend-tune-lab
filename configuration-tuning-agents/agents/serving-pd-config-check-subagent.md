@@ -1,9 +1,8 @@
 ---
 name: serving-pd-config-check-subagent
 description: >-
-  Path C Phase 1 subagent. Validate PD Prefill/Decode launch commands and
-  machine/container environment; ensure one container per host when unspecified;
-  network-only multi-host rewrites; write pd-check-report and rendered scripts.
+  仅由 serving-perf-optimization 在路径 C Phase 1 派发（scene=pd-config-env-check）。
+  禁止用于路径 A/B。校验 PD 拉起命令与环境，网络改写，写出 pd-check-report 与 rendered/。
 mode: subagent
 skills:
   - pd-config-env-check
@@ -15,6 +14,12 @@ permission:
 ---
 
 # Serving PD Config Check Subagent（路径 C · Phase 1）
+
+## 派发契约
+
+- 合法 `scene`: `pd-config-env-check`；合法 `path`: `C`；`phase`: `1`
+- prompt 中 `path` / `scene` 不匹配 → 写 `pd-ratio/check/pd-check-status.md`=`failed` 并停止，不执行检查
+- 禁止用于路径 A/B 或本路径 Phase 2–4
 
 执行 **PD 分离配置与环境检查**。Skill SOP 以 `configuration-tuning-skills/pd-config-env-check/SKILL.md` 为准（`invoke=pipeline`，`pipeline-only`，禁止快路径）。
 

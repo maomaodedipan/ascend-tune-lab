@@ -44,7 +44,7 @@ Primary  Read primary-workflow.md
     │       Read 对应 SKILL.md，invoke=standalone，当场执行
     │
     └── 慢路径（路径 A / B / C，互斥）
-            Read 路径详文 → 派发 subagent
+            锁 path → Read 一页门禁 → 查表派发 subagent
             subagent 按 Phase 调用 pipeline-only / dual（invoke=pipeline）
 ```
 

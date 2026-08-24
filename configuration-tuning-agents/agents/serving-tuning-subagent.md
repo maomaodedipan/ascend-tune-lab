@@ -1,9 +1,8 @@
 ---
 name: serving-tuning-subagent
 description: >-
-  vLLM-Ascend 服务化调优 subagent（第二阶段）。读取 baseline-summary.md，解析/询问 SLO 约束，
-  调用 serving-parallel-strategy-tuning 编排并行策略 / KV / SLO 并发估算，并落盘中间过程产物。
-  供 serving-perf-optimization 在 Phase 2 派发。
+  仅由 serving-perf-optimization 在路径 A Phase 2 派发（scene=serving-parallel-strategy-tuning）。
+  禁止用于路径 B/C。离线并行策略调优（不部署、不压测）。
 mode: subagent
 skills:
   - serving-parallel-strategy-tuning
@@ -21,6 +20,12 @@ permission:
 ---
 
 # Serving Tuning Subagent（Phase 2 · 并行策略调优）
+
+## 派发契约
+
+- 合法 `scene`: `serving-parallel-strategy-tuning`；合法 `path`: `A`；`phase`: `2`
+- prompt 中 `path` / `scene` 不匹配 → 写 `{case_dir}/tuning/tuning-status.md`=`failed`（若已有 case_dir）并停止，不执行调优
+- 禁止用于路径 B/C
 
 Phase 2 **服务化调优** subagent：以 Phase 1 `baseline-summary.md` 为起点，执行 **离线并行策略调优**（不部署、不压测）。
 

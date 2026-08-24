@@ -10,6 +10,8 @@ description: MindStudio Profiler Analyze（msprof-analyze）是面向 AI 训练�
 
 `invoke: pipeline-only`。仅由路径 B 的 `serving-profiling-analysis-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/profiling/`（或用户指定 `output_dir`）。Primary **禁止**快路径。约定见 `configuration-tuning-skills/README.md`。
 
+本机若需 CLI：`pip install msprof-analyze==8.5.2`（与路径 B 原 workflow 钉扎版本一致）。未安装时向用户说明并停止本 skill，禁止假装已跑通 advisor/cluster 分析。
+
 目前提供两个功能，根据用户需求自动选择对应工具：
 
 | 能力                     | 工具命令 | 侧重点                                                |

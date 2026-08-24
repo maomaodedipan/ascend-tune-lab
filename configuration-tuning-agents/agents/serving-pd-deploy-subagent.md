@@ -1,9 +1,8 @@
 ---
 name: serving-pd-deploy-subagent
 description: >-
-  Path C Phase 3 subagent. Deploy mooncake_master then Prefill/Decode/Proxy from
-  Phase 1 rendered scripts after AISBench is ready; on failure diagnose and
-  signal rollback to Phase 1.
+  仅由 serving-perf-optimization 在路径 C Phase 3 派发（scene=pd-deploy）。
+  禁止用于路径 A/B。仅用 rendered/ 部署；失败回退 Phase 1。
 mode: subagent
 skills:
   - pd-deploy
@@ -15,6 +14,12 @@ permission:
 ---
 
 # Serving PD Deploy Subagent（路径 C · Phase 3）
+
+## 派发契约
+
+- 合法 `scene`: `pd-deploy`；合法 `path`: `C`；`phase`: `3`
+- prompt 中 `path` / `scene` 不匹配 → 写 `pd-ratio/deploy/pd-deploy-status.md`=`failed` 并停止
+- 禁止用于路径 A/B 或本路径其它 Phase
 
 执行 **PD 分离部署**。Skill SOP 以 `configuration-tuning-skills/pd-deploy/SKILL.md` 为准（`invoke=pipeline`，`pipeline-only`，禁止快路径 / 独立部署）。
 

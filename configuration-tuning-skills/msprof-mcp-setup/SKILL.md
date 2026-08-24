@@ -55,6 +55,10 @@ mcp>=1.26.0,<2        # msprof-mcp 0.1.8 依赖 mcp 1.x 的 fastmcp，2.x 已移
 pandas>=2,<3          # Windows 上 pandas 3.x C 扩展 DLL 加载失败；Linux 脚本一并约束
 ```
 
+Linux / WSL 上 `uv tool` 与 Perfetto 还要求 **Python ≥ 3.11**、**glibc ≥ 2.34**。不满足时先升级系统或改用已满足条件的环境，禁止跳过 setup 冒充已分析。
+
+路径 B 可选 CLI：`msprof-analyze==8.5.2`（`pip install msprof-analyze==8.5.2`），由 `ascend-msprof-analyze-cli` 使用，不是本 skill 的安装产物。
+
 
 ## 5. 路径 A：Linux / macOS / WSL（用 bootstrap 脚本）
 

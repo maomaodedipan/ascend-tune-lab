@@ -1,10 +1,8 @@
 ---
 name: serving-pd-ratio-benchmark-subagent
 description: >-
-  Path C Phase 4 subagent. Run AISBench P/D QPS tests under SLO, compute best
-  PD ratio, fit to cluster capacity, verify deploy + e2e per-NPU throughput;
-  write pd-ratio-report and status. P checks TTFT only; D checks TPOT only;
-  concurrencies may differ.
+  仅由 serving-perf-optimization 在路径 C Phase 4 派发（scene=pd-ratio-benchmark）。
+  禁止用于路径 A/B。AISBench 配比实测与报告；P 只看 TTFT、D 只看 TPOT。
 mode: subagent
 skills:
   - pd-ratio-benchmark
@@ -16,6 +14,12 @@ permission:
 ---
 
 # Serving PD Ratio Benchmark Subagent（路径 C · Phase 4）
+
+## 派发契约
+
+- 合法 `scene`: `pd-ratio-benchmark`；合法 `path`: `C`；`phase`: `4`
+- prompt 中 `path` / `scene` 不匹配 → 写 `pd-ratio/benchmark/pd-ratio-status.md`=`failed` 并停止
+- 禁止用于路径 A/B 或本路径其它 Phase
 
 执行 **AISBench 压测、最佳 PD 配比计算、资源可达判定与验证实测**。Skill SOP 以 `configuration-tuning-skills/pd-ratio-benchmark/SKILL.md` 为准（`invoke=pipeline`，`pipeline-only`，禁止快路径 / 独立压测）。
 

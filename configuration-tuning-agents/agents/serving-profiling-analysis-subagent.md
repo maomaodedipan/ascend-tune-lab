@@ -1,10 +1,8 @@
 ---
 name: serving-profiling-analysis-subagent
 description: >-
-  Ascend NPU Profiling 分析 subagent（路径 B，对齐 msagent Profiler）。与路径 A 服务化
-  调优平级互斥。仅在用户明确要做 profiling 分析且提供本地 *_ascend_pt / *_ascend_ms /
-  PROF_* 路径时由 primary 派发。首次/MCP 未就绪须先 msprof-mcp-setup。优先 msprof-mcp，
-  落盘 profiling-report.md。
+  仅由 serving-perf-optimization 在路径 B 派发（scene=profiling-analysis）。
+  禁止用于路径 A/C。须本地 *_ascend_pt / PROF_*；MCP 未就绪先 msprof-mcp-setup。
 mode: subagent
 skills:
   - msprof-mcp-setup
@@ -26,6 +24,12 @@ permission:
 ---
 
 # Serving Profiling Analysis Subagent
+
+## 派发契约
+
+- 合法 `scene`: `profiling-analysis`；合法 `path`: `B`
+- prompt 中 `path` / `scene` 不匹配 → 向 primary 回报 `refused: wrong scene/path` 并停止，不读数据、不写报告
+- 禁止用于路径 A/C 或快路径独立分析套件
 
 Ascend NPU **Profiling 性能分析** subagent（对应 msagent `Profiler`）：基于真实 Profiling 数据定位瓶颈、解释根因，输出可执行优化建议与落盘报告。
 
@@ -73,7 +77,7 @@ Profiling 分析执行者：数据驱动、证据闭环、**msprof-mcp 优先**�
 6. **搜索止损**：`web_search` 失败一次后本轮禁止再搜；`msprof` 工具类咨询优先用 `github-raw-fetch` 读  
    `https://github.com/kali20gakki/msprof/blob/master/agent_router.md`。
 7. **语言**：默认中文；用户持续英文交流时可切英文。
-8. **与服务化隔离**：只遵循 `profiling-analysis-workflow.md`；不 Read `serving-tuning-workflow.md`，不产出 baseline/tuning 产物。
+8. **与服务化隔离**：只遵循本 agent 与对应 `SKILL.md`；不 Read 路径 A/C 工作流，不产出 baseline/tuning 产物。
 
 ## MCP 调用约定（Cursor）
 

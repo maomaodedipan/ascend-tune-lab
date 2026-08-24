@@ -1,9 +1,8 @@
 ---
 name: serving-aisbench-install-subagent
 description: >-
-  Path C Phase 2 subagent. Probe or install AISBench from source in a target
-  container before PD deploy. Skip if already available. Writes
-  aisbench-install-report/status.
+  仅由 serving-perf-optimization 在路径 C Phase 2 派发（scene=aisbench-install）。
+  禁止用于路径 A/B。部署前探测/源码安装 AISBench，写出 install report/status。
 mode: subagent
 skills:
   - aisbench-install
@@ -15,6 +14,12 @@ permission:
 ---
 
 # Serving AISBench Install Subagent（路径 C · Phase 2）
+
+## 派发契约
+
+- 合法 `scene`: `aisbench-install`；合法 `path`: `C`；`phase`: `2`
+- prompt 中 `path` / `scene` 不匹配 → 写 `pd-ratio/aisbench/aisbench-install-status.md`=`failed` 并停止
+- 禁止用于路径 A/B 或本路径其它 Phase
 
 执行 **AISBench 探测/源码安装（部署前）**。Skill SOP 以 `configuration-tuning-skills/aisbench-install/SKILL.md` 为准（`invoke=pipeline`，`pipeline-only`，禁止快路径）。
 
