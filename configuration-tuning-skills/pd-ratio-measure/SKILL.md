@@ -1,24 +1,26 @@
 ---
-name: pd-ratio-benchmark
-invoke: pipeline-only
+name: pd-ratio-measure
 description: >-
   Run AISBench tests to measure Prefill-side and Decode-side QPS under SLO, then
-  compute best PD instance ratio (Path C Phase 4). Use after aisbench-install.
+  compute best PD instance ratio. Use after pd-deploy. Sub-skill 4 of
+  pd-ratio-benchmark.
 ---
 
-# pd-ratio-benchmark
+# pd-ratio-measure
 
 ## 调用约定
 
-`invoke: pipeline-only`。仅由路径 C Phase 4 的 `serving-pd-ratio-benchmark-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/pd-ratio/benchmark/`。禁止独立压测。约定见 `configuration-tuning-skills/README.md`。
+`pd-ratio-benchmark` 的第 4 个子 skill。Read 本 `SKILL.md` 后在当前会话执行。产物写 `{workdir}/pd-ratio/benchmark/`。
 
-路径 C · Phase 4。用 AISBench 实测 QPS_P / QPS_D，计算最佳 PD 配比；按集群**整机**卡数/机数拟合可达拓扑并做验证 e2e（单卡吞吐对比），落盘终态报告。
+前置：`pd-deploy-status.md` = `passed`，AISBench 可用。禁止在未部署成功时压测。
+
+用 AISBench 实测 QPS_P / QPS_D，计算最佳 PD 配比；按集群**整机**卡数/机数拟合可达拓扑并做验证 e2e（单卡吞吐对比），落盘终态报告。
 
 **QPS 扫点在最小 1P1D 上完成**（每侧实例卡数 = `DP×TP`），测试阶段不要求、也不应使用全部 NPU。拟合扩容才使用整机 `avail_npus`。
 
 ## SLO 约束（硬门禁）
 
-配比压测前必须已确定 TTFT / TPOT 限制（Phase 0 写入 `pd-deploy-config.md`）：
+配比压测前必须已确定 TTFT / TPOT 限制（主 skill 写入 `pd-deploy-config.md`）：
 
 | 字段 | 用户已提供 | 未提供时的默认 |
 | --- | --- | --- |
@@ -170,7 +172,7 @@ ais_bench --models <model_task> --datasets <dataset_task> \
 ### 可达判定
 
 ```bash
-python configuration-tuning-skills/pd-ratio-benchmark/scripts/fit_pd_ratio_capacity.py \
+python configuration-tuning-skills/pd-ratio-measure/scripts/fit_pd_ratio_capacity.py \
   --suggested-n-p {n_p} --suggested-n-d {n_d} \
   --cost-p {DP_P*TP_P} --cost-d {DP_D*TP_D} \
   --avail-npus {avail_npus} [--avail-hosts {n}] \
@@ -201,7 +203,7 @@ python configuration-tuning-skills/pd-ratio-benchmark/scripts/fit_pd_ratio_capac
 5. 产物：`verify/baseline-e2e.json`、`verify/deploy-e2e.json`（均含 `concurrency`、`ttft_ms`、`tpot_ms`、`slo_met`）、`recommend.json`；attempt 用 `attempt_*_v.json`（或 `*_verify.json`）。
 
 ```bash
-python configuration-tuning-skills/pd-ratio-benchmark/scripts/select_recommend_pd.py \
+python configuration-tuning-skills/pd-ratio-measure/scripts/select_recommend_pd.py \
   --baseline-json {workdir}/pd-ratio/benchmark/verify/baseline-e2e.json \
   --deploy-json {workdir}/pd-ratio/benchmark/verify/deploy-e2e.json \
   --out-json {workdir}/pd-ratio/benchmark/recommend.json
@@ -247,7 +249,7 @@ ais_bench /path/ais_d_qps.py --mode perf
 
 ## Agent 步骤
 
-1. Read 本 SKILL、`pd-ratio-report-template.md`、Phase 2/3 status、`pd-deploy-config.md`。
+1. Read 本 SKILL、`pd-ratio-report-template.md`、aisbench/deploy status、`pd-deploy-config.md`。
 2. 解析 SLO（空则 TTFT 不限、TPOT=50ms）；创建 `attempts/`。
 3. 粗估墙钟；≥64k 先告知用户。
 4. 冒烟 proxy。
@@ -256,7 +258,7 @@ ais_bench /path/ais_d_qps.py --mode perf
 7. 两侧均满足后计算配比：
 
 ```bash
-python configuration-tuning-skills/pd-ratio-benchmark/scripts/compute_pd_ratio.py \
+python configuration-tuning-skills/pd-ratio-measure/scripts/compute_pd_ratio.py \
   --p-json {workdir}/pd-ratio/benchmark/p-qps-result.json \
   --d-json {workdir}/pd-ratio/benchmark/d-qps-result.json \
   --out-json {workdir}/pd-ratio/benchmark/ratio-calc.json

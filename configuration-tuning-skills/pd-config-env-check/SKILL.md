@@ -1,20 +1,19 @@
 ---
 name: pd-config-env-check
-invoke: pipeline-only
 description: >-
-  Validate PD-disaggregation Prefill/Decode launch commands and environment for
-  Path C. Rewrite only network fields plus computed kv_port/engine_id/dp_size;
-  never rename kv_connector. Renders mooncake_master + dual proxy (fetched from
-  vllm-ascend). Use for PD ratio / PD deploy check.
+  Validate PD-disaggregation Prefill/Decode launch commands and environment.
+  Rewrite only network fields plus computed kv_port/engine_id/dp_size; never
+  rename kv_connector. Renders mooncake_master + dual proxy (fetched from
+  vllm-ascend). Sub-skill 1 of pd-ratio-benchmark.
 ---
 
 # pd-config-env-check
 
 ## 调用约定
 
-`invoke: pipeline-only`。仅由路径 C Phase 1 的 `serving-pd-config-check-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/pd-ratio/check/`（含 status）。即使「只做环境检查」也禁止快路径，以免误写 `pd-check-status`。约定见 `configuration-tuning-skills/README.md`。
+`pd-ratio-benchmark` 的第 1 个子 skill。Read 本 `SKILL.md` 后在当前会话执行。产物写 `{workdir}/pd-ratio/check/`。须已有 `pd-deploy-config.md`。
 
-路径 C · Phase 1。校验用户 PD 分离拉起命令与执行环境，按公式补齐 PD 参数，产出可执行 `rendered/`（含 **Mooncake master**）。
+校验用户 PD 分离拉起命令与执行环境，按公式补齐 PD 参数，产出可执行 `rendered/`（含 **Mooncake master**）。
 
 详文：[`references/kv-connector-and-params.md`](references/kv-connector-and-params.md)  
 官方拉起回退：[`references/official-model-launch.md`](references/official-model-launch.md)（索引：[模型教程](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/tutorials/models/)）

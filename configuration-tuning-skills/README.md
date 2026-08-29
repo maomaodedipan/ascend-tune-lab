@@ -1,12 +1,12 @@
 # Skill 调用约定
 
-本文是 skill **如何被调用** 的唯一说明：哪些走 A/B/C 流水线，哪些可由 Primary 直接执行，哪些两者都可以。
+本文是 skill **如何被调用** 的唯一说明：哪些走 A/B 流水线，哪些可由 Primary 直接执行，哪些两者都可以。
 
-架构不变：**Plugin → Agent → Skill**。不新增路径，不给单步工具建 subagent。路由仍由 Primary 读 `workflows/primary-workflow.md` 后判定。
+架构不变：**Plugin → Agent → Skill**。不新增路径，不给单步工具建 subagent。路由仍由 Primary 读 `workflows/primary-workflow.md` 后判定。最佳 PD 配比是仓库根独立 skill，不走 A/B。
 
 | 文档 | 职责 |
 | --- | --- |
-| [`../configuration-tuning-agents/workflows/primary-workflow.md`](../configuration-tuning-agents/workflows/primary-workflow.md) | 每次请求先 Read；按本文白名单做快路径 / A / B / C |
+| [`../configuration-tuning-agents/workflows/primary-workflow.md`](../configuration-tuning-agents/workflows/primary-workflow.md) | 每次请求先 Read；按本文白名单做快路径 / A / B |
 | 本文 | invoke 分类、dual 信封、落盘隔离、分类表 |
 | 各 `SKILL.md` | 该工具的 SOP（算法、脚本、参数） |
 
@@ -28,7 +28,7 @@
 - 有配置门禁、多阶段、要写 `*status.md` / `progress.md`、失败要回退 Phase → `pipeline-only`
 - 同一套 SOP 两种用法 → `dual`，**不要**复制成两个 skill
 
-路径（A/B/C）是用户可感知的产品；skill 是步骤。禁止把工具升格成 Path D/E/F。
+路径（A/B）是用户可感知的产品；skill 是步骤。最佳 PD 配比是独立 skill，不是 Path C。
 
 ---
 
@@ -40,30 +40,31 @@
     ▼
 Primary  Read primary-workflow.md
     │
-    ├── 快路径（standalone / dual，且无 A/B/C 产品意图）
-    │       Read 对应 SKILL.md，invoke=standalone，当场执行
+    ├── 快路径（standalone / dual，且无 A/B 产品意图）
+    │       Read 对应 SKILL.md，当场执行
+    │       （含独立 skill `pd-ratio-benchmark`）
     │
-    └── 慢路径（路径 A / B / C，互斥）
+    └── 慢路径（路径 A / B，互斥）
             锁 path → Read 一页门禁 → 查表派发 subagent
-            subagent 按 Phase 调用 pipeline-only / dual（invoke=pipeline）
+            subagent 按 Phase 调用 pipeline-only / dual
 ```
 
-- 快路径 **不是** 第四条流水线，与 A/B/C 仍然互斥：一次请求只走一条。
-- 简单 skill **不** 建 subagent。Subagent 只服务多步、有门禁、要落盘进度的工作。
+- 快路径 **不是** 第三条流水线，与 A/B 仍然互斥：一次请求只走一条。
+- 简单 skill **不** 建 subagent。Subagent 只服务路径 A/B。
 
 ---
 
 ## 路由顺序（硬要求）
 
-Primary 在选 A/B/C **之前**按下列顺序判定。命中即停止往下。
+Primary 在选 A/B **之前**按下列顺序判定。命中即停止往下。
 
-1. **有 A/B/C 产品意图** → 整条走对应流水线。话里即使带了 dual skill 关键词，也只当内部步骤，**禁止**改走快路径。  
+1. **有 A/B 产品意图** → 整条走对应流水线。话里即使带了 dual skill 关键词，也只当内部步骤，**禁止**改走快路径。  
    例：「分析这份 profiling 并算 MFU」→ 路径 B，由 profiling subagent 调 `op-mfu-calculator`。
-2. **只有白名单 skill 的工具意图，没有产品意图** → 快路径。Read 该 `SKILL.md`，`invoke=standalone`。  
-   例：「910B3 上这个 GEMM 的 MFU 是多少」。
-3. **用户明确说不要走流水线、只要某某 skill** → 仅当该 skill 在白名单内才走快路径；缺输入只问该 skill 的参数，不问 `deploy-config.md` / `pd-deploy-config.md`。`pipeline-only` 即使被点名也禁止快路径。
-4. **既像独立工具又像流水线** → **流水线优先**，并告知用户本次按 A/B/C 跑。
-5. **都对不上** → 问用户：独立工具 / 路径 A / B / C。默认不派发 subagent，也不执行快路径。
+2. **只有白名单 skill 的工具意图，没有产品意图** → 快路径。Read 该 `SKILL.md`。  
+   例：「910B3 上这个 GEMM 的 MFU 是多少」；「帮我算最佳 PD 配比」。
+3. **用户明确说不要走流水线、只要某某 skill** → 仅当该 skill 在白名单内才走快路径；缺输入只问该 skill 的参数。`pipeline-only` 即使被点名也禁止快路径。
+4. **既像独立工具又像流水线** → **流水线优先**（A/B）。
+5. **都对不上** → 问用户：独立工具 / 路径 A / B。默认不派发 subagent。
 
 产品意图关键词（摘要，完整触发见各路径详文）：
 
@@ -71,7 +72,6 @@ Primary 在选 A/B/C **之前**按下列顺序判定。命中即停止往下。
 | --- | --- |
 | A · 服务化调优 | 服务化调优、基线复现、并行策略、`deploy-config` |
 | B · Profiling 分析 | profiling / profiler / msprof **分析**（须同时有本地数据路径才进入） |
-| C · 最佳 PD 配比 | 最佳 PD 配比、Prefill-Decode 配比、PD ratio |
 
 「只想算 MFU / 只比对环境 dump」**不是** 产品意图。解析 compare xlsx 已改为 `pipeline-only`，须走路径 B，禁止快路径。
 
@@ -115,10 +115,10 @@ Primary 在选 A/B/C **之前**按下列顺序判定。命中即停止往下。
 
 | 模式 | 目录 | 禁止写入 |
 | --- | --- | --- |
-| standalone | `{workdir}/skills/<skill-name>/` | `*/baseline/`、`*/tuning/`、`{workdir}/profiling/`、`{workdir}/pd-ratio/`、任何 `*status.md` / `progress.md` |
+| standalone | `{workdir}/skills/<skill-name>/`；**`pd-ratio-benchmark` 写 `{workdir}/pd-ratio/`** | `*/baseline/`、`*/tuning/`、`{workdir}/profiling/`、A/B 的 `progress.md` |
 | pipeline | 各路径详文约定的目录 | standalone 目录不是流水线门禁 |
 
-独立调用可以写自己的小报告，但 **不能** 让下次跑 A/B/C 误以为某 Phase 已通过。
+独立调用可以写自己的小报告，但 **不能** 让下次跑 A/B 误以为某 Phase 已通过。
 
 ---
 
@@ -134,6 +134,7 @@ Primary 在选 A/B/C **之前**按下列顺序判定。命中即停止往下。
 | `ascend-dump-analyzer` | standalone | 采集 / 分析 / 比对 Ascend 环境 dump JSON | — |
 | `cluster-analysis` | standalone | 对已有 `cluster_analysis_output` 做集群全景或双集群比对 | — |
 | `vllm-ascend-tuning` | standalone | OS / CANN / Graph Mode / 量化等手册式调优 | — |
+| `pd-ratio-benchmark` | standalone | 最佳 PD 配比 / Prefill-Decode 配比 | 主 skill：`PD-ratio-benchmark/SKILL.md` |
 
 ### pipeline-only（禁止快路径）
 
@@ -158,18 +159,24 @@ Primary 在选 A/B/C **之前**按下列顺序判定。命中即停止往下。
 | `ascend-cluster-fast-slow-rank-detector` | 路径 B |
 | `msprof-mcp-setup` | 路径 B · Step 0 硬门禁 |
 | `github-raw-fetch` | 路径 B（各路径 subagent 拉远端文档时也可 `invoke=pipeline`） |
-| `pd-config-env-check` | 路径 C · Phase 1 |
-| `aisbench-install` | 路径 C · Phase 2 |
-| `pd-deploy` | 路径 C · Phase 3 |
-| `pd-ratio-benchmark` | 路径 C · Phase 4 |
+
+### 独立 skill：最佳 PD 配比
+
+入口：仓库根 [`PD-ratio-benchmark/SKILL.md`](../PD-ratio-benchmark/SKILL.md)。与算 MFU、比对 dump 一样，属于快路径白名单。本会话顺序执行四个子 skill，不派发 agent。
+
+| 顺序 | Skill | 职责 |
+| --- | --- | --- |
+| 主 | `pd-ratio-benchmark`（`PD-ratio-benchmark/`） | 配置门禁 + 编排 |
+| 1 | `pd-config-env-check` | 检查 + `rendered/` |
+| 2 | `aisbench-install` | 部署前安装 AISBench |
+| 3 | `pd-deploy` | 按 `rendered/` 部署；失败回步骤 1 |
+| 4 | `pd-ratio-measure`（`configuration-tuning-skills/pd-ratio-measure/`） | 配比实测 + 报告 |
 
 分析套件（`ascend-*-analysis` 等）即使「只要其中一张表」，也保持 `pipeline-only`，避免绕过路径 B 的 MCP 门禁和完整报告。
 
 `cluster-analysis` 吃的是 **已经导出的** `cluster_analysis_output`，不是原始 `PROF_*`。有原始采集目录且要做完整 Profiling → 仍走路径 B。`compare-analyzer` 已改为 `pipeline-only`，只在路径 B 内解读 compare xlsx。
 
-`vllm-ascend-tuning` 是手册式建议，**不是**路径 A。用户要基线复现 / 并行策略流水线 → 仍走路径 A；要 PD 配比实测 → 仍走路径 C。
-
-`pd-config-env-check` / `aisbench-install` / `pd-deploy` 即使技术上能单独跑，也保持 `pipeline-only`：单独检查/安装/部署会拆开路径 C，且容易误写门禁状态。
+`vllm-ascend-tuning` 是手册式建议，**不是**路径 A。用户要基线复现 / 并行策略流水线 → 仍走路径 A。要 PD 配比 → 独立 skill `PD-ratio-benchmark`。
 
 ---
 
@@ -197,7 +204,7 @@ Cursor 按 **当前 agent 声明的 skills** 做匹配。Primary 的 `AGENTS.md`
 - 给计算器 / 日志抽取类 skill 建 subagent 或 Path D/E/F。
 - 把同一个 SOP 拆成 `foo` 与 `foo-standalone` 两个 skill。
 - 独立调用读写流水线门禁文件，或声称某 Phase 已完成。
-- 独立调用为了凑参去读 / 生成 `deploy-config.md`、`pd-deploy-config.md`。
+- 独立调用为了凑参去读 / 生成 `deploy-config.md`。生成 `pd-deploy-config.md` 仅允许 PD 配比主 skill。
 - 意图模糊时默认进路径 A。
 - Primary 直接执行 `pipeline-only` skill。
 - 流水线进行中再插入快路径或另一条路径。

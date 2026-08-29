@@ -1,23 +1,23 @@
 ---
 name: aisbench-install
-invoke: pipeline-only
 description: >-
-  Probe or install AISBench from source inside a target container for Path C
-  PD-ratio benchmarking. Runs after pd-config-env-check and before pd-deploy.
-  Skip if ais_bench is already available. Pin numpy for vLLM Ascend co-install.
+  Probe or install AISBench from source inside a target container for PD-ratio
+  benchmarking. Runs after pd-config-env-check and before pd-deploy. Skip if
+  ais_bench is already available. Pin numpy for vLLM Ascend co-install.
+  Sub-skill 2 of pd-ratio-benchmark.
 ---
 
 # aisbench-install
 
 ## 调用约定
 
-`invoke: pipeline-only`。仅由路径 C Phase 2 的 `serving-aisbench-install-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/pd-ratio/aisbench/`。即使「只装 AISBench」也禁止快路径。约定见 `configuration-tuning-skills/README.md`。
+`pd-ratio-benchmark` 的第 2 个子 skill。Read 本 `SKILL.md` 后在当前会话执行。产物写 `{workdir}/pd-ratio/aisbench/`。前置：`pd-check-status.md` = `passed`。
 
-路径 C · Phase 2（**部署前**）。在目标容器内探测或源码安装 [AISBench](https://github.com/AISBench/benchmark)，确保后续部署完成后可立刻压测。
+**部署前**在目标容器内探测或源码安装 [AISBench](https://github.com/AISBench/benchmark)，确保后续部署完成后可立刻压测。
 
 ## 前置
 
-- Phase 1 `pd-check-status.md` 为 `passed`。
+- `pd-check-status.md` 为 `passed`。
 - 目标容器来自 `pd-deploy-config.md` / Phase 1 报告（优先 **Prefill 容器**，或用户指定）；容器须已存在且可联网（clone + pip）。
 - **不依赖** PD 服务已部署（本 Phase 在部署之前）。
 
@@ -86,10 +86,10 @@ pip3 install 'numpy>=2.0,<2.5' \
 ## Agent 步骤
 
 1. Read 本 SKILL 与 `workflows/templates/aisbench-install-report-template.md`。
-2. 验收 Phase 1 `passed`；从配置/检查报告选容器（优先 Prefill；用户指定优先）。
+2. 验收检查步骤 `passed`；从配置/检查报告选容器（优先 Prefill；用户指定优先）。
 3. 探测 → 安装或跳过 → **numpy 兼容检查/钉回** → 写报告与 status。
 4. 国内环境：**默认走阿里云 PyPI**；默认 PyPI 卡住超过约 1–2 分钟即切换镜像，勿长时间干等。
-5. `failed` → Primary **不得**进入 Phase 3 部署。
+5. `failed` → **不得**进入子 skill 3 部署。
 
 ## 产物
 

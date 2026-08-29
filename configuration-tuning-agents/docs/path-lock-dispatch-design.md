@@ -182,9 +182,11 @@ P2 内部的 KV / 并行枚举 / SLO 三个 skill 由 **tuning subagent** 调用
 
 只派这一个 subagent。禁止派 baseline / PD。
 
-### 5.4 路径 C · 最佳 PD 配比
+### 5.4 最佳 PD 配比（已改为独立 skill）
 
-`config_md_path` 默认 `{workdir}/pd-deploy-config.md`。
+**已废弃 path=C。** 不要按本表派发。请用仓库根 `PD-ratio-benchmark/SKILL.md`。
+
+下表仅作历史记录，实现已删除对应 subagent。
 
 | 顺序 | 门禁 | `subagent_type` | scene | 验收 |
 | --- | --- | --- | --- | --- |

@@ -26,7 +26,7 @@ VERSION="0.1.0"
 SOURCE_AGENT_FILE="AGENTS.md"
 
 # Skill whitelist (space-separated) — all skills bundled with this plugin
-INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency msprof-mcp-setup ascend-profiler-db-explorer ascend-profiler-data-validation ascend-computation-analysis ascend-communication-analysis ascend-schedule-analysis ascend-msprof-analyze-cli ascend-cluster-fast-slow-rank-detector op-mfu-calculator github-raw-fetch pd-config-env-check pd-deploy aisbench-install pd-ratio-benchmark compare-analyzer ascend-dump-analyzer cluster-analysis vllm-ascend-tuning"
+INCLUDED_SKILLS="ascend-baseline-generator serving-cfg-extract serving-perf-metrics vllm-ascend-config-extractor model-feature-extractor serving-parallel-strategy-tuning find-possible-parallel-strategy serving-kv-cache-capacity serving-slo-concurrency msprof-mcp-setup ascend-profiler-db-explorer ascend-profiler-data-validation ascend-computation-analysis ascend-communication-analysis ascend-schedule-analysis ascend-msprof-analyze-cli ascend-cluster-fast-slow-rank-detector op-mfu-calculator github-raw-fetch pd-config-env-check pd-deploy aisbench-install pd-ratio-measure compare-analyzer ascend-dump-analyzer cluster-analysis vllm-ascend-tuning"
 INCLUDED_AGENT_PATTERN="serving-*"
 
 # Detect TRAE variant by scanning global config directories.
@@ -292,6 +292,14 @@ for skill_entry in "$LOCAL_SKILL_ROOT"/*; do
 done
 ok "Skills: $skill_link_count linked"
 
+REPO_ROOT="$(cd "$PLUGIN_ROOT/.." && pwd)"
+MAIN_PD="$REPO_ROOT/PD-ratio-benchmark"
+if [ -f "$MAIN_PD/SKILL.md" ]; then
+    rm -rf "$BRAND_DIR/skills/PD-ratio-benchmark"
+    ln -sfn "$(realpath "$MAIN_PD")" "$BRAND_DIR/skills/PD-ratio-benchmark"
+    ok "Main skill: PD-ratio-benchmark linked"
+fi
+
 for link in "$BRAND_DIR/skills"/*; do
     [ -L "$link" ] && [ ! -e "$link" ] && rm "$link"
 done
@@ -305,6 +313,7 @@ if [ -d "$LOCAL_AGENT_ROOT" ]; then
         name=$(basename "$agent_entry")
         base="${name%.md}"
         case "$base" in
+            serving-pd-*|serving-aisbench-install-subagent) continue ;;
             $INCLUDED_AGENT_PATTERN) ;;
             *) continue ;;
         esac

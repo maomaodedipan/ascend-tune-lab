@@ -1,24 +1,25 @@
 ---
 name: pd-deploy
-invoke: pipeline-only
 description: >-
-  Deploy Mooncake master then Prefill/Decode/Proxy from Path C rendered scripts.
-  Use after pd-config-env-check and aisbench-install. On failure diagnose and
-  rollback to Phase 1.
+  Deploy Mooncake master then Prefill/Decode/Proxy from rendered scripts. Use
+  after pd-config-env-check and aisbench-install. On failure diagnose and go
+  back to pd-config-env-check. Sub-skill 3 of pd-ratio-benchmark.
 ---
 
 # pd-deploy
 
 ## 调用约定
 
-`invoke: pipeline-only`。仅由路径 C Phase 3 的 `serving-pd-deploy-subagent` 以 `invoke=pipeline` 调用。产物写 `{workdir}/pd-ratio/deploy/`。禁止独立部署。约定见 `configuration-tuning-skills/README.md`。
+`pd-ratio-benchmark` 的第 3 个子 skill。Read 本 `SKILL.md` 后在当前会话执行。产物写 `{workdir}/pd-ratio/deploy/`。
 
-路径 C · Phase 3。严格使用 `{workdir}/pd-ratio/check/rendered/` 启动服务。
+前置：check = `passed`，aisbench = `passed` 或 `skipped`。失败则回到子 skill 1，禁止进入配比压测。
+
+严格使用 `{workdir}/pd-ratio/check/rendered/` 启动服务。
 
 ## 前置硬门禁
 
 1. `pd-check-status.md` = `passed`（其中须已通过 **Mooncake 预装/路径** 校验）。
-2. `aisbench-install-status.md` = `passed` 或 `skipped`（**部署前**已完成 AISBench 探测/安装）。
+2. `aisbench-install-status.md` = `passed` 或 `skipped`（部署前已完成 AISBench 探测/安装）。
 3. `rendered/mooncake|prefill|decode|proxy` 齐全。
 4. Proxy 脚本为**真实** Python（`proxy_fetch.ok=true` 或文件体积明显非占位）；否则先补齐再部署。
 5. **禁止**用未渲染的 `pd-deploy-config.md` 原文启动。
@@ -60,7 +61,7 @@ mooncake_master --port 50088 \
    - Proxy：**以 `POST /v1/chat/completions` 冒烟成功为准**。部分 example proxy 对 `GET /v1/models` 返回 **404** 仍属正常，**不得**仅因 models 404 判部署失败。P/D ready 后再起 proxy，并稍等再冒烟。
 7. **AISBench 同容器安装后的启动失败**：若日志出现 `Numba needs NumPy 2.4 or less` / `Got NumPy 2.5`，属 Phase 2 依赖污染，**钉回 `numpy<2.5`** 后重试 Prefill/Decode（见 `aisbench-install`）；勿改用户 `LD_LIBRARY_PATH` 或业务启动参数。
 8. 成功 → report + `status=passed`（含 `proxy_base_url`、served `model` 名若已知、`mooncake_master_address`；注明 `shell=interactive_equiv`）。
-9. 失败 → **停止**，落盘诊断 + `rollback_to_phase1=true`，**向用户列出失败点与可选改法并等待确认**；禁止在未确认前改 MTP / spawn / `LD_LIBRARY_PATH` / 其它启动参数后重试。Primary 不得进 Phase 4。
+9. 失败 → **停止**，落盘诊断，**向用户列出失败点与可选改法并等待确认**；禁止在未确认前改 MTP / spawn / `LD_LIBRARY_PATH` / 其它启动参数后重试。不得进入子 skill 4 压测；需改配置则回到子 skill 1。
 
 ## 产物
 
@@ -72,7 +73,7 @@ mooncake_master --port 50088 \
 
 ## 边界
 
-- 不修改 `rendered/`；需改配置则回退 Phase 1 并由用户确认。
+- 不修改 `rendered/`；需改配置则回到子 skill 1 并由用户确认。
 - 不安装 Mooncake / AISBench、不压测（numpy 钉回属于修复 AISBench 安装副作用，允许）。
 - 宿主机只允许 docker*；业务一律 `docker exec`。
 - 拉不起来只诊断与核对；官方回填命令同样不得自作主张改参试错。

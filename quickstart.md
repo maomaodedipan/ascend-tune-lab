@@ -2,7 +2,7 @@
 
 ## 概述
 
-面向 **vLLM-Ascend** 的服务化性能优化 Agent。安装后在 Cursor / Claude Code / OpenCode 等工具中直接对话即可。一次对话只走一种功能：独立 skill 快路径，或路径 A 服务化调优、路径 B Profiling 分析、路径 C 最佳 PD 配比。
+面向 **vLLM-Ascend** 的服务化性能优化 Agent。安装后在 Cursor / Claude Code / OpenCode 等工具中直接对话即可。一次对话只走一种功能：独立 skill（含最佳 PD 配比），或路径 A 服务化调优、路径 B Profiling 分析。
 
 不适用于训练侧调优、非 Ascend NPU 上的 vLLM 部署。
 
@@ -161,29 +161,27 @@ bash /path/to/ascend-tune-lab/configuration-tuning-agents/init.sh project cursor
 
 ## 二、快速上手
 
-未指定工作目录时，默认写到 **`./workspace`**。用自然语言说明要做的事即可；缺配置时代理会列出缺失项。说不清时会先问：独立工具 / A / B / C。
+未指定工作目录时，默认写到 **`./workspace`**。用自然语言说明要做的事即可；缺配置时代理会列出缺失项。说不清时会先问：独立工具 / A / B。
 
-### 流水线（三条，互斥）
+### 流水线（A/B 互斥）
 
 ```text
 Primary 锁 path
-  ├── 快路径 → 只跑白名单 skill
+  ├── 快路径 → 只跑白名单 skill（含最佳 PD 配比）
   ├── A 服务化调优 → Phase 0 → 基线 → 离线并行策略
-  ├── B Profiling  → 本地数据路径 → 分析报告
-  └── C 最佳 PD 配比 → 检查 → AISBench → 部署 → 配比实测
+  └── B Profiling  → 本地数据路径 → 分析报告
 ```
 
 | 功能 | 提示词示例 | 你会得到什么 |
 | --- | --- | --- |
 | **服务化调优** | 「帮我做服务化调优」「生成某某模型的基线部署」 | `workspace/cases/.../baseline/`、`tuning/` |
 | **Profiling 分析** | 「分析这份 profiling 数据」并带上本地 `*_ascend_pt` / `PROF_*` | `workspace/profiling/profiling-report.md` |
-| **最佳 PD 配比** | 「帮我算最佳 PD 配比」 | `workspace/pd-ratio/` |
 
-Profiling 需要本地已有采集数据；PD 配比会在真实机器上部署并压测。不要和下面的独立 skill 混在一句里同时提。
+Profiling 需要本地已有采集数据。不要和下面的独立 skill 混在一句里同时提。
 
 ### 独立 Skill（不进流水线）
 
-只要白名单工具、且没有上面三条产品意图时，不派发 subagent。产物在 **`workspace/skills/<skill-name>/`**。
+只要白名单工具、且没有上面两条产品意图时，不派发 subagent。
 
 | Skill | 提示词示例 |
 | --- | --- |
@@ -191,12 +189,13 @@ Profiling 需要本地已有采集数据；PD 配比会在真实机器上部署�
 | `ascend-dump-analyzer` | 「比对这两份环境 dump」 |
 | `cluster-analysis` | 「分析这份 cluster_analysis_output」 |
 | `vllm-ascend-tuning` | 「jemalloc / Graph Mode / HCCL 怎么调」 |
+| `pd-ratio-benchmark` | 「帮我算最佳 PD 配比」→ `workspace/pd-ratio/`（独立 skill：`PD-ratio-benchmark/SKILL.md`） |
 
 分类见 [`configuration-tuning-skills/README.md`](configuration-tuning-skills/README.md)。有原始 `PROF_*` 且要做完整 Profiling → 走路径 B，不要用 `cluster-analysis` 代替。要基线或并行策略流水线 → 走路径 A，不要用 `vllm-ascend-tuning` 代替。
 
 读 GitHub 文件、安装 msprof-mcp、从日志抽配置/吞吐、抽取 vLLM 配置开关或模型特性表、解析 msprof-analyze compare xlsx，已并入流水线，**不能**单独触发。
 
-编排入口始终是 `workflows/primary-workflow.md`（先锁 path，再查表派发）。
+编排入口是 `workflows/primary-workflow.md`（A/B / 快路径）。最佳 PD 配比是独立 skill：`PD-ratio-benchmark/SKILL.md`。
 
 ---
 
