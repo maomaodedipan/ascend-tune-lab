@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 generate_cluster_report.py
-基于提取的 JSON 数据生成 HTML 集群分析/比对报告（深色主题版）。
+基于提取的 JSON 数据生成 HTML 集群分析/比对报告（浅色主题版）。
 """
 import argparse
 import json
@@ -60,7 +60,7 @@ def generate_single_report(data, template_path, output_path):
     pp = bi.get("pp_size", "?")
     dp = bi.get("dp_size", "?")
 
-    free_ratio_color = "text-red-400" if free_ratio > 20 else "text-orange-400" if free_ratio > 10 else "text-emerald-400"
+    free_ratio_color = "text-red-600" if free_ratio > 20 else "text-orange-600" if free_ratio > 10 else "text-emerald-600"
 
     r = {
         "{{DATA_PATH}}": data.get("data_dir", "?"),
@@ -97,7 +97,7 @@ def generate_single_report(data, template_path, output_path):
     heatmap_html += '<th class="text-center p-3">平均</th></tr></thead><tbody>'
     for rid in sorted(rank_summary.keys(), key=lambda x: int(x) if x.isdigit() else 999):
         rs = rank_summary[rid]
-        row_html = f'<tr><td class="p-3 font-bold text-white">{rid}</td>'
+        row_html = f'<tr><td class="p-3 font-bold text-slate-900">{rid}</td>'
         step_data = data.get("step_statistic", [])
         rank_step_stage = {}
         for row in step_data:
@@ -117,7 +117,7 @@ def generate_single_report(data, template_path, output_path):
             else:
                 cls = "heatmap-mid"
             row_html += f'<td class="text-center p-2 {cls}">{val_ms}</td>'
-        row_html += f'<td class="text-center p-2 font-bold text-white">{us_to_ms(rs["avg_stage"])}</td></tr>'
+        row_html += f'<td class="text-center p-2 font-bold text-slate-900">{us_to_ms(rs["avg_stage"])}</td></tr>'
         heatmap_html += row_html
     heatmap_html += "</tbody></table>"
     r["{{RANK_HEATMAP_TABLE}}"] = heatmap_html
@@ -131,7 +131,7 @@ def generate_single_report(data, template_path, output_path):
             badge = '<span class="badge-critical">严重偏差</span>' if deviation > 10 else '<span class="badge-warn">偏低</span>'
         else:
             badge = '<span class="badge-ok">正常</span>'
-        slow_rows += f'<tr><td class="p-3 font-bold text-white">{rid}</td><td class="text-right p-3 text-slate-300">{us_to_ms(rs["avg_stage"])}</td><td class="text-right p-3 text-slate-300">{us_to_ms(rs["avg_compute"])}</td><td class="text-right p-3 text-slate-300">{us_to_ms(rs["avg_comm"])}</td><td class="text-right p-3 text-slate-300">{us_to_ms(rs["avg_free"])}</td><td class="text-right p-3 {"text-red-400" if deviation>10 else "text-emerald-400" if deviation<-10 else "text-slate-400"} font-semibold">{fmt_signed(round(deviation, 1))}%</td><td class="text-center p-3">{badge}</td></tr>'
+        slow_rows += f'<tr><td class="p-3 font-bold text-slate-900">{rid}</td><td class="text-right p-3 text-slate-600">{us_to_ms(rs["avg_stage"])}</td><td class="text-right p-3 text-slate-600">{us_to_ms(rs["avg_compute"])}</td><td class="text-right p-3 text-slate-600">{us_to_ms(rs["avg_comm"])}</td><td class="text-right p-3 text-slate-600">{us_to_ms(rs["avg_free"])}</td><td class="text-right p-3 {"text-red-600" if deviation>10 else "text-emerald-600" if deviation<-10 else "text-slate-400"} font-semibold">{fmt_signed(round(deviation, 1))}%</td><td class="text-center p-3">{badge}</td></tr>'
     r["{{SLOW_RANK_ROWS}}"] = slow_rows
 
     # 通信算子 — TEXT 模式时间单位为 ms，DB 模式为 μs 需转换
@@ -161,17 +161,17 @@ def generate_single_report(data, template_path, output_path):
     # 优化建议
     advice = ""
     if comm_ratio > 50:
-        advice += f'<div class="bg-red-900/20 border-l-4 border-red-500 p-4 rounded-r-lg"><div class="text-red-400 text-xs font-bold uppercase">P0 — 通信主导</div><div class="text-white font-semibold mt-1">通信时间占比过高 ({comm_ratio:.1f}%)</div><div class="text-slate-400 text-sm mt-1">建议检查通信算子耗时 Top 列表，优化 AllReduce/AllGather，考虑通信压缩。</div></div>'
+        advice += f'<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg"><div class="text-red-600 text-xs font-bold uppercase">P0 — 通信主导</div><div class="text-slate-900 font-semibold mt-1">通信时间占比过高 ({comm_ratio:.1f}%)</div><div class="text-slate-400 text-sm mt-1">建议检查通信算子耗时 Top 列表，优化 AllReduce/AllGather，考虑通信压缩。</div></div>'
     if free_ratio > 20:
-        advice += f'<div class="bg-orange-900/20 border-l-4 border-orange-500 p-4 rounded-r-lg"><div class="text-orange-400 text-xs font-bold uppercase">P1 — 空闲过高</div><div class="text-white font-semibold mt-1">空闲时间占比过高 ({free_ratio:.1f}%)</div><div class="text-slate-400 text-sm mt-1">可能存在流同步等待或 Host 下发瓶颈，检查算子下发效率。</div></div>'
+        advice += f'<div class="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg"><div class="text-orange-600 text-xs font-bold uppercase">P1 — 空闲过高</div><div class="text-slate-900 font-semibold mt-1">空闲时间占比过高 ({free_ratio:.1f}%)</div><div class="text-slate-400 text-sm mt-1">可能存在流同步等待或 Host 下发瓶颈，检查算子下发效率。</div></div>'
     if rank_count > 1 and avg_stage > 0:
         max_dev = max(abs(safe_div(rank_summary[rr]["avg_stage"] - avg_stage, avg_stage) * 100) for rr in rank_summary)
         if max_dev > 10:
-            advice += f'<div class="bg-orange-900/20 border-l-4 border-orange-500 p-4 rounded-r-lg"><div class="text-orange-400 text-xs font-bold uppercase">P1 — 负载不均</div><div class="text-white font-semibold mt-1">Rank 间负载不均 (最大偏差 {max_dev:.1f}%)</div><div class="text-slate-400 text-sm mt-1">检查数据分片均匀性和通信组配置。</div></div>'
+            advice += f'<div class="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg"><div class="text-orange-600 text-xs font-bold uppercase">P1 — 负载不均</div><div class="text-slate-900 font-semibold mt-1">Rank 间负载不均 (最大偏差 {max_dev:.1f}%)</div><div class="text-slate-400 text-sm mt-1">检查数据分片均匀性和通信组配置。</div></div>'
     if compute_ratio > 70:
-        advice += f'<div class="bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-r-lg"><div class="text-blue-400 text-xs font-bold uppercase">P2 — 计算主导</div><div class="text-white font-semibold mt-1">计算时间占比 {compute_ratio:.1f}%</div><div class="text-slate-400 text-sm mt-1">关注算子融合、计算精度优化和 Kernel 性能。</div></div>'
+        advice += f'<div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg"><div class="text-blue-600 text-xs font-bold uppercase">P2 — 计算主导</div><div class="text-slate-900 font-semibold mt-1">计算时间占比 {compute_ratio:.1f}%</div><div class="text-slate-400 text-sm mt-1">关注算子融合、计算精度优化和 Kernel 性能。</div></div>'
     if not advice:
-        advice = '<div class="bg-emerald-900/20 border-l-4 border-emerald-500 p-4 rounded-r-lg"><div class="text-emerald-400 text-xs font-bold uppercase">P2</div><div class="text-white font-semibold mt-1">集群状态正常</div><div class="text-slate-400 text-sm mt-1">各项指标在正常范围内。</div></div>'
+        advice = '<div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg"><div class="text-emerald-600 text-xs font-bold uppercase">P2</div><div class="text-slate-900 font-semibold mt-1">集群状态正常</div><div class="text-slate-400 text-sm mt-1">各项指标在正常范围内。</div></div>'
     r["{{ADVICE_CARDS}}"] = advice
 
     for key, val in r.items():
@@ -232,18 +232,18 @@ def generate_compare_report(data_a, data_b, template_path, output_path):
     # 状态文字
     if stage_delta_pct > 10:
         status_text = "严重劣化"
-        stage_delta_color = "text-red-400"
+        stage_delta_color = "text-red-600"
     elif stage_delta_pct > 5:
         status_text = "中度劣化"
-        stage_delta_color = "text-orange-400"
+        stage_delta_color = "text-orange-600"
     elif stage_delta_pct > 0:
         status_text = "轻微劣化"
-        stage_delta_color = "text-orange-400"
+        stage_delta_color = "text-orange-600"
     else:
         status_text = "性能改善"
-        stage_delta_color = "text-emerald-400"
+        stage_delta_color = "text-emerald-600"
 
-    bw_delta_color = "text-red-400" if bw_delta_pct < 0 else "text-emerald-400"
+    bw_delta_color = "text-red-600" if bw_delta_pct < 0 else "text-emerald-600"
     load_type_text = f"计算 {a_comp_pct}% → {b_comp_pct}% | 通信 {a_comm_pct}% → {b_comm_pct}%"
 
     # 诊断摘要
@@ -288,14 +288,14 @@ def generate_compare_report(data_a, data_b, template_path, output_path):
     # 关键定位点
     key_points = ""
     if delta_comm != 0:
-        key_points += f'<li class="flex items-start"><span class="mr-2 text-xl">📡</span><p>通信时间{"增加" if delta_comm > 0 else "减少"} <strong>{abs(us_to_ms(delta_comm)):.1f} ms</strong>，贡献度 {comm_contrib:.1f}%<br><span class="text-white font-semibold">{"通信为主要劣化来源" if delta_comm > 0 and comm_contrib > 50 else "通信有改善" if delta_comm < 0 else "通信变化不显著"}</span></p></li>'
+        key_points += f'<li class="flex items-start"><span class="mr-2 text-xl">📡</span><p>通信时间{"增加" if delta_comm > 0 else "减少"} <strong>{abs(us_to_ms(delta_comm)):.1f} ms</strong>，贡献度 {comm_contrib:.1f}%<br><span class="text-slate-900 font-semibold">{"通信为主要劣化来源" if delta_comm > 0 and comm_contrib > 50 else "通信有改善" if delta_comm < 0 else "通信变化不显著"}</span></p></li>'
     if a_comm_pct != b_comm_pct:
         dominant = "通信反超计算" if b_comm_pct > b_comp_pct and a_comm_pct <= a_comp_pct else "通信占比上升"
-        key_points += f'<li class="flex items-start"><span class="mr-2 text-xl">📊</span><p>负载转换：通信占比 {a_comm_pct}% → {b_comm_pct}%<br><span class="text-orange-400 font-semibold">{dominant}</span></p></li>'
+        key_points += f'<li class="flex items-start"><span class="mr-2 text-xl">📊</span><p>负载转换：通信占比 {a_comm_pct}% → {b_comm_pct}%<br><span class="text-orange-600 font-semibold">{dominant}</span></p></li>'
     if bw_delta_pct < -10:
-        key_points += f'<li class="flex items-start"><span class="mr-2 text-xl">📉</span><p>带宽下降 {abs(bw_delta_pct):.1f}%（{bw_a_val:.1f} → {bw_b_val:.1f} GB/s）<br><span class="text-red-400 font-semibold">带宽暴跌，需排查硬件链路</span></p></li>'
+        key_points += f'<li class="flex items-start"><span class="mr-2 text-xl">📉</span><p>带宽下降 {abs(bw_delta_pct):.1f}%（{bw_a_val:.1f} → {bw_b_val:.1f} GB/s）<br><span class="text-red-600 font-semibold">带宽暴跌，需排查硬件链路</span></p></li>'
     if delta_free > 0 and free_contrib > 10:
-        key_points += f'<li class="flex items-start"><span class="mr-2 text-xl">💤</span><p>空闲时间增加 {us_to_ms(delta_free):.1f} ms（贡献度 {free_contrib:.1f}%）<br><span class="text-orange-400 font-semibold">可能存在 Host 下发瓶颈</span></p></li>'
+        key_points += f'<li class="flex items-start"><span class="mr-2 text-xl">💤</span><p>空闲时间增加 {us_to_ms(delta_free):.1f} ms（贡献度 {free_contrib:.1f}%）<br><span class="text-orange-600 font-semibold">可能存在 Host 下发瓶颈</span></p></li>'
     if not key_points:
         key_points = '<li class="flex items-start"><span class="mr-2 text-xl">✅</span><p>未发现显著性能差异</p></li>'
     r["{{KEY_POINTS_HTML}}"] = key_points
@@ -365,37 +365,37 @@ def generate_compare_report(data_a, data_b, template_path, output_path):
             trend = '<span class="delta-down">↓ 改善</span>'
         else:
             trend = '<span class="delta-neutral">→ 持平</span>'
-        rank_diff_rows += f'<tr><td class="p-3 font-bold text-white">{rid}</td><td class="text-right p-3 text-slate-300">{us_to_ms(sa_val)}</td><td class="text-right p-3 text-slate-300">{us_to_ms(sb_val)}</td><td class="text-right p-3 {"delta-up" if diff>0 else "delta-down" if diff<0 else "delta-neutral"}>{fmt_signed(us_to_ms(diff))}</td><td class="text-right p-3 {"delta-up" if pct>0 else "delta-down" if pct<0 else "delta-neutral"}>{fmt_signed(round(pct, 1))}%</td><td class="text-center p-3">{trend}</td></tr>'
+        rank_diff_rows += f'<tr><td class="p-3 font-bold text-slate-900">{rid}</td><td class="text-right p-3 text-slate-600">{us_to_ms(sa_val)}</td><td class="text-right p-3 text-slate-600">{us_to_ms(sb_val)}</td><td class="text-right p-3 {"delta-up" if diff>0 else "delta-down" if diff<0 else "delta-neutral"}>{fmt_signed(us_to_ms(diff))}</td><td class="text-right p-3 {"delta-up" if pct>0 else "delta-down" if pct<0 else "delta-neutral"}>{fmt_signed(round(pct, 1))}%</td><td class="text-center p-3">{trend}</td></tr>'
     r["{{RANK_DIFF_ROWS}}"] = rank_diff_rows
 
     # 劣化根因列表
     deg_items = ""
     if stage_delta_pct > 10:
-        deg_items += f'<div class="flex items-center justify-between p-3 bg-red-900/20 rounded-lg"><div><span class="text-red-400 font-bold mr-2">P0</span><span class="text-white">Stage 总耗时增幅 {stage_delta_pct:.1f}%</span></div><span class="text-red-400 font-mono">+{us_to_ms(delta_stage):.1f} ms</span></div>'
+        deg_items += f'<div class="flex items-center justify-between p-3 bg-red-50 rounded-lg"><div><span class="text-red-600 font-bold mr-2">P0</span><span class="text-slate-900">Stage 总耗时增幅 {stage_delta_pct:.1f}%</span></div><span class="text-red-600 font-mono">+{us_to_ms(delta_stage):.1f} ms</span></div>'
     if comm_contrib > 50 and delta_comm > 0:
-        deg_items += f'<div class="flex items-center justify-between p-3 bg-orange-900/20 rounded-lg"><div><span class="text-orange-400 font-bold mr-2">P0</span><span class="text-white">通信劣化主导 ({comm_contrib:.1f}%)</span></div><span class="text-orange-400 font-mono">+{us_to_ms(delta_comm):.1f} ms</span></div>'
+        deg_items += f'<div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg"><div><span class="text-orange-600 font-bold mr-2">P0</span><span class="text-slate-900">通信劣化主导 ({comm_contrib:.1f}%)</span></div><span class="text-orange-600 font-mono">+{us_to_ms(delta_comm):.1f} ms</span></div>'
     if bw_delta_pct < -10:
-        deg_items += f'<div class="flex items-center justify-between p-3 bg-red-900/20 rounded-lg"><div><span class="text-red-400 font-bold mr-2">P0</span><span class="text-white">带宽暴跌 {abs(bw_delta_pct):.1f}%</span></div><span class="text-red-400 font-mono">{bw_a_val:.1f}→{bw_b_val:.1f}</span></div>'
+        deg_items += f'<div class="flex items-center justify-between p-3 bg-red-50 rounded-lg"><div><span class="text-red-600 font-bold mr-2">P0</span><span class="text-slate-900">带宽暴跌 {abs(bw_delta_pct):.1f}%</span></div><span class="text-red-600 font-mono">{bw_a_val:.1f}→{bw_b_val:.1f}</span></div>'
     if compute_contrib > 50 and delta_compute > 0:
-        deg_items += f'<div class="flex items-center justify-between p-3 bg-blue-900/20 rounded-lg"><div><span class="text-blue-400 font-bold mr-2">P1</span><span class="text-white">计算劣化 ({compute_contrib:.1f}%)</span></div><span class="text-blue-400 font-mono">+{us_to_ms(delta_compute):.1f} ms</span></div>'
+        deg_items += f'<div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg"><div><span class="text-blue-600 font-bold mr-2">P1</span><span class="text-slate-900">计算劣化 ({compute_contrib:.1f}%)</span></div><span class="text-blue-600 font-mono">+{us_to_ms(delta_compute):.1f} ms</span></div>'
     if free_contrib > 10 and delta_free > 0:
-        deg_items += f'<div class="flex items-center justify-between p-3 bg-orange-900/20 rounded-lg"><div><span class="text-orange-400 font-bold mr-2">P1</span><span class="text-white">空闲增加 ({free_contrib:.1f}%)</span></div><span class="text-orange-400 font-mono">+{us_to_ms(delta_free):.1f} ms</span></div>'
+        deg_items += f'<div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg"><div><span class="text-orange-600 font-bold mr-2">P1</span><span class="text-slate-900">空闲增加 ({free_contrib:.1f}%)</span></div><span class="text-orange-600 font-mono">+{us_to_ms(delta_free):.1f} ms</span></div>'
     if not deg_items:
-        deg_items = '<div class="p-3 bg-emerald-900/20 rounded-lg text-emerald-400">未发现显著劣化</div>'
+        deg_items = '<div class="p-3 bg-emerald-50 rounded-lg text-emerald-600">未发现显著劣化</div>'
     r["{{DEGRADATION_ITEMS}}"] = deg_items
 
     # 行动建议
     actions = ""
     if bw_delta_pct < -10:
-        actions += '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold mr-3">1</div><div><h4 class="text-sm font-semibold text-white">网络拓扑与硬件检查</h4><p class="text-xs text-slate-400 mt-1">重点检查 HCCS 链路状态、交换机拥塞、光模块降级。</p></div></li>'
+        actions += '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-bold mr-3">1</div><div><h4 class="text-sm font-semibold text-slate-900">网络拓扑与硬件检查</h4><p class="text-xs text-slate-400 mt-1">重点检查 HCCS 链路状态、交换机拥塞、光模块降级。</p></div></li>'
     if comm_contrib > 50:
-        actions += '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold mr-3">2</div><div><h4 class="text-sm font-semibold text-white">集合通信算法调优</h4><p class="text-xs text-slate-400 mt-1">对比通信域切分策略、AllReduce/AllGather 算法参数。</p></div></li>'
+        actions += '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-bold mr-3">2</div><div><h4 class="text-sm font-semibold text-slate-900">集合通信算法调优</h4><p class="text-xs text-slate-400 mt-1">对比通信域切分策略、AllReduce/AllGather 算法参数。</p></div></li>'
     if compute_contrib > 50:
-        actions += '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold mr-3">3</div><div><h4 class="text-sm font-semibold text-white">算子性能排查</h4><p class="text-xs text-slate-400 mt-1">检查计算算子变化、精度配置、Kernel 编译优化。</p></div></li>'
+        actions += '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-bold mr-3">3</div><div><h4 class="text-sm font-semibold text-slate-900">算子性能排查</h4><p class="text-xs text-slate-400 mt-1">检查计算算子变化、精度配置、Kernel 编译优化。</p></div></li>'
     if free_contrib > 10:
-        actions += '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold mr-3">4</div><div><h4 class="text-sm font-semibold text-white">Host 下发效率</h4><p class="text-xs text-slate-400 mt-1">检查算子下发、流同步、CPU 负载。</p></div></li>'
+        actions += '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-bold mr-3">4</div><div><h4 class="text-sm font-semibold text-slate-900">Host 下发效率</h4><p class="text-xs text-slate-400 mt-1">检查算子下发、流同步、CPU 负载。</p></div></li>'
     if not actions:
-        actions = '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold mr-3">1</div><div><h4 class="text-sm font-semibold text-white">持续监控</h4><p class="text-xs text-slate-400 mt-1">性能差异在可接受范围，建议持续监控。</p></div></li>'
+        actions = '<li class="flex items-start"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-bold mr-3">1</div><div><h4 class="text-sm font-semibold text-slate-900">持续监控</h4><p class="text-xs text-slate-400 mt-1">性能差异在可接受范围，建议持续监控。</p></div></li>'
     r["{{ACTION_ITEMS}}"] = actions
 
     for key, val in r.items():

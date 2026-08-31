@@ -8,8 +8,8 @@ description: "Ascend cluster performance analysis and comparison tool. Invoke wh
 
 ## 独立调用
 
-- 触发：用户已有 `cluster_analysis_output` / `cluster.db`，只要集群全景或双集群比对报告，且没有路径 B 的完整 profiling 分析意图
-- 输入：一个或两个集群数据目录；缺则只问本 skill 参数
+- 触发：用户只要集群/单卡分析或比对报告，且没有路径 B 的完整 profiling 分析意图
+- 输入：按四类场景给路径（单集群 / 双集群 / 单卡 / 双卡）；缺则只问本 skill 参数
 - 输出：MD / HTML 写入 `{workdir}/skills/cluster-analysis/`（原始数据旁的 summary 可保留，但不写 `{workdir}/profiling/profiling-report.md`）
 - 禁止：写路径 B 门禁文件；禁止声称 Profiling 分析已完成
 - 有原始 `*_ascend_pt` / `PROF_*` 且要做完整 Profiling 分析 → 走路径 B，不走本 skill
@@ -18,14 +18,15 @@ description: "Ascend cluster performance analysis and comparison tool. Invoke wh
 
 `invoke: standalone`。subagent 默认不调用本 skill。路径 B 的集群快慢卡仍用 `ascend-cluster-fast-slow-rank-detector`。
 
-面向华为昇腾 NPU 集群 profiling 数据的性能分析工具。支持从 `cluster_analysis_output` 目录（DB 或 TEXT 格式）提取数据，生成全景数据总结 MD 文件，并根据用户需求生成**单集群整体分析**或**双集群比对分析** HTML 报告。
+面向华为昇腾 NPU 集群 / 单卡 profiling 数据的性能分析工具。支持从 `cluster_analysis_output`（集群）或 `*_ascend_pt` / `PROF_*`（单卡）提取数据，生成全景 MD，并按场景生成四类 HTML 报告：**单集群、双集群、单卡、双卡**。禁止把这四类合并写成「单份对比 / 双份对比」。
 
 ## 触发场景
 
 当用户出现以下意图时触发：
-- "分析集群数据"、"集群性能报告"、"cluster analysis"
-- "比对两个集群"、"对比正常和异常集群"、"cluster compare"
-- 用户提供 `cluster_analysis_output` 目录路径或 `cluster.db` 文件路径
+- **单集群**："分析这个集群"、"生成集群报告"；只给一个 `cluster_analysis_output` / `cluster.db`
+- **双集群**："比对两个集群"、"对比正常和异常集群"、"cluster compare"；给两个集群目录
+- **单卡**："分析这张卡"、"单卡报告"；给一个 `*_ascend_pt` / `PROF_*` rank 目录
+- **双卡**："对比两张卡"、"快卡 vs 慢卡"、"双卡比对"；给两个 rank 目录
 - 用户提到 `ClusterStepTraceTime`、`ClusterCommunicationTime` 等表名
 
 ## 核心工作流（必须严格遵循）
@@ -190,26 +191,35 @@ python scripts/cluster_data_extractor.py --data-dir <path> --output <output.json
 
 ### 报告生成脚本
 
-`scripts/generate_cluster_report.py`：基于提取的数据生成 HTML 报告。
+`scripts/generate_cluster_report.py`：基于提取的数据生成 HTML 报告（四类 mode 对应四节）。
 
 ```bash
-# 单集群分析
-python scripts/generate_cluster_report.py --mode single --data <data.json> --output report.html
+# 单集群
+python scripts/cluster_data_extractor.py --data-dir <path> --output cluster.json
+python scripts/generate_cluster_report.py --mode single --data cluster.json --output cluster.html
 
-# 双集群比对
-python scripts/generate_cluster_report.py --mode compare --data-a <a.json> --data-b <b.json> --output compare.html
+# 双集群
+python scripts/generate_cluster_report.py --mode compare --data-a <a.json> --data-b <b.json> --output cluster_compare.html
+
+# 单卡
+python scripts/single_card_extractor.py --rank-dir <path> --output card.json
+python scripts/generate_cluster_report.py --mode card --data card.json --output card.html
+
+# 双卡
+python scripts/generate_cluster_report.py --mode card-compare --data-a <a.json> --data-b <b.json> --output card_compare.html
+python scripts/generate_card_compare_csv.py --data-a <a.json> --data-b <b.json> --output card_compare.xlsx
 ```
 
 当脚本不可用时，按照上述工作流手动执行 SQL 查询、计算差异、参考 HTML 模板构造报告。
 
 ## HTML 报告设计要求
 
-两份 HTML 模板必须满足：
+四份 HTML 模板必须满足：
 1. **自包含**：单个 HTML 文件，内联 CSS/JS，无外部依赖（ECharts 通过 CDN 引入）
 2. **数据驱动**：模板中使用 `{{占位符}}` 标记数据插入点，脚本替换后生成最终报告
 3. **交互式图表**：使用 ECharts 渲染所有图表（柱状图/饼图/线图/热力图）
 4. **响应式**：适配不同屏幕宽度
-5. **专业视觉**：深色标题栏、卡片式布局、颜色梯度表格、状态标签（正常/警告/严重）
+5. **专业视觉**：默认浅色主题、卡片式布局、颜色梯度表格、状态标签（正常/警告/严重）
 6. **中文界面**：所有标题、标签、描述使用中文
 
 ## 注意事项
